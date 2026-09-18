@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { fetchItems, fetchReadItemsByAttribute, fetchFile } from '@/utils/api';
 import { useRouter } from 'next/router';
+import { PdfCanvasViewer } from '@/components/PdfCanvasViewer';
 
 interface File {
     name: string | null;
@@ -83,7 +84,7 @@ const FileViewer: React.FC = () => {
 
     useEffect(() => {
         return () => {
-            if (selectedFile) {
+            if (selectedFile && selectedFile.dataUrl.startsWith('blob:')) {
                 URL.revokeObjectURL(selectedFile.dataUrl);
             }
         };
@@ -120,12 +121,9 @@ const FileViewer: React.FC = () => {
                     <div className="error">{error}</div>
                 ) : selectedFile ? (
                     selectedFile.fileType.toLowerCase() === 'application/pdf' ? (
-                        <iframe
-                            src={`${selectedFile.dataUrl}#view=FitH&navpanes=0${pageNumber ? `&page=${pageNumber}` : ''}`}
-                            width="100%"
-                            height="100%"
-                            style={{ border: 'none' }}
-                            title="PDF Viewer"
+                        <PdfCanvasViewer
+                            url={selectedFile.dataUrl}
+                            initialPage={pageNumber || 1}
                         />
                     ) : (
                         <div>

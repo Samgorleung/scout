@@ -1,6 +1,6 @@
 
 import { NextApiRequest, NextApiResponse } from 'next'
-import { filterHeaderForAWSValues } from '@/utils/header'
+import { createOrUpdateRating } from '@/utils/mockDb'
 
 export default async function handler(
     req: NextApiRequest,
@@ -8,27 +8,26 @@ export default async function handler(
 ): Promise<void> {
     const {
         body,
-        method,
-        headers,
+        method
     } = req
     switch (method) {
         case 'POST':
             try {
-                const data = {
-                    method: 'POST',
-                    headers: {
-                        ...filterHeaderForAWSValues(headers),
-                        'Content-Type': 'application/json'
-                    },
-                    body: body
+                let parsedBody = body;
+                if (typeof body === 'string') {
+                    parsedBody = JSON.parse(body);
                 }
-                const response = await fetch(process.env.BACKEND_HOST + '/api/rate', data);
-                if (!response.ok) {
-                    console.error(await response.text())
-                    console.error(await response.json())
-                    throw new Error('Failed to read items by attribute');
+
+                const result_id = parsedBody?.result_id;
+                const good_response = parsedBody?.good_response;
+
+                if (!result_id) {
+                    res.status(400).json({ error: 'result_id is required' });
+                    return;
                 }
-                res.status(200).send(await response.json())
+
+                const rating = createOrUpdateRating(result_id, good_response);
+                res.status(200).json({ message: `Rating ${rating.id} submitted successfully` });
             } catch (error) {
                 let message
                 console.log(error)
@@ -37,7 +36,7 @@ export default async function handler(
             }
             break
         default:
-            res.setHeader('Allow', ['GET'])
+            res.setHeader('Allow', ['POST'])
             res.status(405).end(`Method ${method} Not Allowed`)
             break
     }

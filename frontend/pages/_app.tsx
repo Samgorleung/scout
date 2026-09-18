@@ -17,13 +17,13 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                 <div className="header-content">
                     <h1>🔎 IPA Scout</h1>
                     <nav className="header-nav">
-                        <Link href="/" passHref legacyBehavior>
+                        <Link href="/" prefetch={false} passHref legacyBehavior>
                             <a className={`nav-link ${isActive('/') ? 'active' : ''}`}>Summary</a>
                         </Link>
-                        <Link href="/results" passHref legacyBehavior>
+                        <Link href="/results" prefetch={false} passHref legacyBehavior>
                             <a className={`nav-link ${isActive('/results') ? 'active' : ''}`}>Results</a>
                         </Link>
-                        <Link href="/file-viewer/" passHref legacyBehavior>
+                        <Link href="/file-viewer" prefetch={false} passHref legacyBehavior>
                             <a className={`nav-link ${isActive('/file-viewer') ? 'active' : ''}`}>File Viewer</a>
                         </Link>
                     </nav>
@@ -34,7 +34,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             </main>
             <footer className="App-footer">
                 <div className="footer-content">
-                    <Link href="/privacy-policy" passHref legacyBehavior>
+                    <Link href="/privacy-policy" prefetch={false} passHref legacyBehavior>
                         <a>Privacy Policy</a>
                     </Link>
                     <span className="footer-separator">|</span>

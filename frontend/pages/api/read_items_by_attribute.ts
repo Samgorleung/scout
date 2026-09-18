@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { filterHeaderForAWSValues } from '@/utils/header'
+import { filterItems } from '@/utils/mockDb'
 
 export default async function handler(
     req: NextApiRequest,
@@ -7,29 +7,26 @@ export default async function handler(
 ): Promise<void> {
     const {
         body,
-        method,
-        headers
+        method
     } = req
     switch (method) {
         case 'POST':
             try {
-                const data = {
-                    method: 'POST',
-                    headers: {
-                        ...filterHeaderForAWSValues(headers), // Filter out cookies (not needed for backend requests
-                        'Content-Type': 'application/json', // Set Content-Type header
-                    },
-                    body: body
+                let parsedBody = body;
+                if (typeof body === 'string') {
+                    parsedBody = JSON.parse(body);
                 }
-                console.log(`Sending request to: ${process.env.BACKEND_HOST}/api/read_items_by_attribute`)
-                const response = await fetch(process.env.BACKEND_HOST + '/api/read_items_by_attribute', data);
 
-                if (!response.ok) {
-                    console.error(await response.text())
-                    console.error(await response.json())
-                    throw new Error('Failed to read items by attribute');
+                const model = parsedBody?.model;
+                const filters = parsedBody?.filters || {};
+
+                if (!model) {
+                    res.status(400).json({ error: 'Model is required' });
+                    return;
                 }
-                res.status(200).send(await response.json())
+
+                const results = filterItems(model, filters);
+                res.status(200).json(results);
             } catch (error) {
                 let message
                 console.log(error)
@@ -38,7 +35,7 @@ export default async function handler(
             }
             break
         default:
-            res.setHeader('Allow', ['GET'])
+            res.setHeader('Allow', ['POST'])
             res.status(405).end(`Method ${method} Not Allowed`)
             break
     }

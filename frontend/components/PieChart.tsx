@@ -102,8 +102,9 @@ const PieChart: React.FC<PieChartProps> = ({ data, labels }) => {
         .text(label);
     });
 
+    const chartElement = ref.current;
     return () => {
-      d3.select(ref.current).selectAll('*').remove();
+      d3.select(chartElement).selectAll('*').remove();
       tooltip.remove();
     };
   }, [data, labels]);

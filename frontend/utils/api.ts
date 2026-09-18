@@ -50,41 +50,10 @@ export const fetchRelatedItems = async (uuid: string, model1: string, model2: st
 };
 
 export const fetchFile = async (uuid: string): Promise<{ url: string; fileType: string }> => {
-    const response = await fetch(`/api/get_items/${uuid}`);
-    if (!response.ok) throw new Error('Failed to fetch file');
-
-    const fileType = response.headers.get('Content-Type') || 'application/octet-stream';
-
-    // Create a new ReadableStream from the response body
-    const reader = response.body?.getReader();
-    const stream = new ReadableStream({
-        start(controller) {
-            return pump();
-            function pump(): Promise<void> {
-                return reader?.read().then(({ done, value }) => {
-                    if (done) {
-                        controller.close();
-                        return;
-                    }
-                    controller.enqueue(value);
-                    return pump();
-                }) || Promise.resolve();
-            }
-        }
-    });
-
-    // Create a new response with the stream
-    const newResponse = new Response(stream);
-
-    // Get the blob from the new response
-    const blob = await newResponse.blob();
-
-    const pdf_blob =  blob.slice(0, blob.size, "application/pdf")
-
-    // Create a URL for the blob
-    const url = URL.createObjectURL(pdf_blob);
-
-    return { url, fileType };
+    return {
+        url: `/api/get_items/${uuid}`,
+        fileType: 'application/pdf'
+    };
 };
 
 interface RatingRequest {

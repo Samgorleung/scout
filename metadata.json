@@ -1,0 +1,8 @@
+{
+  "name": "IPA Scout",
+  "description": "An interactive assurance and compliance review toolkit for infrastructure projects.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

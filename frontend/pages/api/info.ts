@@ -1,26 +1,14 @@
-
 import { NextApiRequest, NextApiResponse } from 'next'
-import { getRelatedItems } from '@/utils/mockDb'
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ): Promise<void> {
-    const {
-        query: { uuid, model1, model2, limit_to_user },
-        method
-    } = req
+    const { method } = req
     switch (method) {
         case 'GET':
             try {
-                if (typeof uuid !== 'string' || typeof model1 !== 'string' || typeof model2 !== 'string') {
-                    res.status(400).json({ error: 'uuid, model1, and model2 are required and must be strings' })
-                    return
-                }
-
-                const limitUser = limit_to_user === 'true'
-                const related = getRelatedItems(uuid, model1, model2, limitUser)
-                res.status(200).json(related)
+                res.status(200).json({ backend: "Scout In-Memory API Service" })
             } catch (error) {
                 let message
                 console.log(error)

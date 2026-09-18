@@ -97,9 +97,14 @@ const ResultsTable: React.FC = () => {
     const [open, setOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState<TransformedResult | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [thumbsUpColour, setThumbsUpColour] = useState({color: "none"})
-    const [thumbsDownColour, setThumbsDownColour] = useState({color: "none"})
+    const [thumbsUpColour, setThumbsUpColour] = useState({color: "none"});
+    const [thumbsDownColour, setThumbsDownColour] = useState({color: "none"});
+    const [isMounted, setIsMounted] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -305,23 +310,23 @@ const ResultsTable: React.FC = () => {
         }
     };
 
+    if (!isMounted || isLoading) {
+        return <MagnifyingGlassLoader />;
+    }
+
     return (
         <div style={{ width: '100%', height: '100vh' }}>
-            {isLoading ? (
-                <MagnifyingGlassLoader />
-            ) : (
-                <div className="ag-theme-alpine" style={{ height: 'calc(100% - 64px)', width: '100%' }}>
-                    <AgGridReact
-                        rowData={results}
-                        columnDefs={columnDefs}
-                        defaultColDef={{
-                            wrapText: true,
-                            autoHeight: true,
-                        }}
-                        onRowClicked={onRowClicked}
-                    />
-                </div>
-            )}
+            <div className="ag-theme-alpine" style={{ height: 'calc(100% - 64px)', width: '100%' }}>
+                <AgGridReact
+                    rowData={results}
+                    columnDefs={columnDefs}
+                    defaultColDef={{
+                        wrapText: true,
+                        autoHeight: true,
+                    }}
+                    onRowClicked={onRowClicked}
+                />
+            </div>
             <Modal open={open} onClose={handleClose}>
                 <Box sx={style}>
                     <IconButton

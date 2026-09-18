@@ -1,6 +1,6 @@
 
 import { NextApiRequest, NextApiResponse } from 'next'
-import { filterHeaderForAWSValues } from '@/utils/header'
+import { getById, getAll } from '@/utils/mockDb'
 
 export default async function handler(
     req: NextApiRequest,
@@ -8,29 +8,27 @@ export default async function handler(
 ): Promise<void> {
     const {
         query: { table, uuid },
-        method,
-        headers
+        method
     } = req
     switch (method) {
         case 'GET':
             try {
-                const data = {
-                    method: 'GET',
-                    headers: {
-                        ...filterHeaderForAWSValues(headers), // Filter out cookies (not needed for backend requests
-                    } as HeadersInit,
+                if (!table || typeof table !== 'string') {
+                    res.status(400).json({ error: 'Table is required' })
+                    return
                 }
-                const queryString = new URLSearchParams(
-                    uuid ? {
-                        uuid: uuid as string,
-                    } : {}).toString();
-                const response = await fetch(process.env.BACKEND_HOST + '/api/item/' + table + '?' + queryString, data);
-                if (!response.ok) {
-                    console.error(await response.text())
-                    console.error(await response.json())
-                    throw new Error('Failed to read items by attribute');
+
+                if (uuid && typeof uuid === 'string') {
+                    const item = getById(table, uuid)
+                    if (!item) {
+                        res.status(404).json({ error: 'Item not found' })
+                        return
+                    }
+                    res.status(200).json(item)
+                } else {
+                    const items = getAll(table)
+                    res.status(200).json(items)
                 }
-                res.status(200).send(await response.json())
             } catch (error) {
                 let message
                 console.log(error)
