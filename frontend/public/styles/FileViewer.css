@@ -1,54 +1,83 @@
+/* Modern Document Dossier Workspace */
+
 .file-viewer {
   display: flex;
-  height: 100vh;
+  height: calc(100vh - 150px);
+  min-height: 640px;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.05);
 }
 
 .file-list {
-  width: 250px;
+  width: 320px;
   padding: 20px;
-  background-color: #f0f0f0;
+  background-color: #f8fafc;
+  border-right: 1px solid #e2e8f0;
   overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .file-list h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  letter-spacing: -0.01em;
 }
 
 .file-list ul {
   list-style-type: none;
   padding: 0;
+  margin: 0;
 }
 
 .file-list li {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .file-list button {
   width: 100%;
   text-align: left;
-  background: none;
-  border: none;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 5px 10px;
-  transition: background-color 0.2s;
+  padding: 10px 14px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
 }
 
 .file-list button:hover {
-  background-color: #e0e0e0;
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.file-list button.active {
+  background-color: #eff6ff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px #3b82f6;
 }
 
 .document-viewer {
   flex-grow: 1;
-  padding: 20px;
+  padding: 24px;
   overflow-y: auto;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
 }
 
 .no-file-selected {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100%;
-  font-size: 18px;
-  color: #888;
+  font-size: 0.9375rem;
+  color: #94a3b8;
+  gap: 12px;
 }

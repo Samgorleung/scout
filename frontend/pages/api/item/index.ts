@@ -5,20 +5,20 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ): Promise<void> {
-  const {
-    query: { table, uuid },
-    method
-  } = req;
+  const { query, method } = req;
 
   switch (method) {
     case 'GET':
       try {
-        if (!table || typeof table !== 'string') {
-          res.status(400).json({ error: 'Table parameter is required' });
+        const table = query.table as string;
+        const uuid = query.uuid as string;
+
+        if (!table) {
+          res.status(400).json({ error: 'Table is required' });
           return;
         }
 
-        if (uuid && typeof uuid === 'string') {
+        if (uuid) {
           const item = await getFirestoreById(table, uuid);
           if (!item) {
             res.status(404).json({ error: 'Item not found in Firestore' });
@@ -30,7 +30,7 @@ export default async function handler(
           res.status(200).json(items);
         }
       } catch (error) {
-        console.error(`[API /api/item/${table}] Error querying Firestore:`, error);
+        console.error('[API /api/item] Error querying Firestore:', error);
         const message = error instanceof Error ? error.message : 'Database error';
         res.status(500).json({ error: message });
       }

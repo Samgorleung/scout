@@ -26,15 +26,15 @@ graph TD
     W --> X[Generate final answer using LLM]
     X --> Y[Update hypotheses]
     
-    Z[LLM Interactions] --> AA[Azure OpenAI API calls]
+    Z[LLM Interactions] --> AA[Google Gemini API calls]
     AA --> AB[Generate responses for evidence, questions, and hypotheses]
     
     AC[File Processing] --> AD[chunk_save_embed_file<br/>Process and embed file chunks]
     AD --> AE[FileChunker<br/>Chunk file content]
     AD --> AF[Add chunks to vector store]
     
-    AG[Data Storage] --> AH[PostgreSQL<br/>Store structured data]
-    AG --> AI[S3<br/>Store file content]
+    AG[Data Storage] --> AH[Cloud Firestore<br/>Store structured data]
+    AG --> AI[Firebase Storage / GCS<br/>Store file content]
     AG --> AJ[Chroma Vector Store<br/>Store embeddings]
 ```
 

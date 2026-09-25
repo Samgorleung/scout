@@ -17,7 +17,7 @@ graph TD
     K --> L[Write file metadata to PostgreSQL]
     L --> M[Chunk file]
     M --> |Using FileChunker| N[Generate file info using LLM]
-    N --> |Use Azure OpenAI| O[Add chunks to vector store]
+    N --> |Use Google Gemini API| O[Add chunks to vector store]
     O --> |Use Chroma| P[Process next file]
     P -- More files --> G
     P -- No more files --> Q[End]
@@ -35,8 +35,8 @@ graph TD
     end
 
     subgraph "Storage"
-        R[PostgreSQL]
-        S[S3]
+        R[Cloud Firestore]
+        S[Firebase Storage / GCS]
         T[Chroma Vector Store]
     end
 
@@ -45,7 +45,7 @@ graph TD
     O --> T
 
     subgraph "External Services"
-        U[Azure OpenAI]
+        U[Google Gemini API]
         V[LibreOffice Container]
     end
 

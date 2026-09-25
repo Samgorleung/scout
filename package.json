@@ -13,6 +13,11 @@
   },
   "dependencies": {
     "@google/genai": "^2.15.0",
-    "pdfjs-dist": "3.11.174"
+    "firebase": "^12.19.0",
+    "framer-motion": "^13.4.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "pdfjs-dist": "3.11.174",
+    "recharts": "^3.10.1"
   }
 }

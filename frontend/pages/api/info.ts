@@ -8,7 +8,7 @@ export default async function handler(
     switch (method) {
         case 'GET':
             try {
-                res.status(200).json({ backend: "Scout In-Memory API Service" })
+                res.status(200).json({ backend: "Scout Cloud Firestore & Firebase Service" })
             } catch (error) {
                 let message
                 console.log(error)

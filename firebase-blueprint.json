@@ -1,0 +1,206 @@
+{
+  "entities": {
+    "Project": {
+      "title": "Project",
+      "description": "Scout Infrastructure and Projects Authority assurance review project",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "review_type": { "type": "string" },
+        "results_summary": { "type": "string" },
+        "created_datetime": { "type": "string" },
+        "updated_datetime": { "type": "string" }
+      },
+      "required": ["id", "name", "review_type"]
+    },
+    "Criterion": {
+      "title": "Criterion",
+      "description": "Gateway review criteria questions and required evidence points",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "gate": { "type": "string" },
+        "category": { "type": "string" },
+        "question": { "type": "string" },
+        "evidence": { "type": "string" },
+        "created_datetime": { "type": "string" },
+        "updated_datetime": { "type": "string" }
+      },
+      "required": ["id", "gate", "category", "question"]
+    },
+    "Result": {
+      "title": "Result",
+      "description": "Evaluated project criteria status and justification",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "project_id": { "type": "string" },
+        "criterion": { "type": "object" },
+        "answer": { "type": "string", "enum": ["Positive", "Negative", "Neutral"] },
+        "full_text": { "type": "string" },
+        "chunks": { "type": "array" },
+        "created_datetime": { "type": "string" },
+        "updated_datetime": { "type": "string" }
+      },
+      "required": ["id", "answer", "full_text"]
+    },
+    "File": {
+      "title": "File",
+      "description": "Uploaded project document stored in Firebase Storage",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "clean_name": { "type": "string" },
+        "type": { "type": "string" },
+        "summary": { "type": "string" },
+        "storage_path": { "type": "string" },
+        "url": { "type": "string" },
+        "size": { "type": "number" },
+        "created_datetime": { "type": "string" }
+      },
+      "required": ["id", "name"]
+    },
+    "Rating": {
+      "title": "Rating",
+      "description": "User feedback rating on compliance evaluation results",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "result_id": { "type": "string" },
+        "positive_rating": { "type": "boolean" },
+        "created_datetime": { "type": "string" }
+      },
+      "required": ["id", "result_id", "positive_rating"]
+    },
+    "Evaluation": {
+      "title": "Evaluation",
+      "description": "Autonomous Gemini compliance evaluations and risk mappings",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "companyNumber": { "type": "string" },
+        "projectName": { "type": "string" },
+        "reviewType": { "type": "string" },
+        "model": { "type": "string" },
+        "evaluation": { "type": "object" },
+        "created_datetime": { "type": "string" }
+      },
+      "required": ["id", "model", "evaluation"]
+    },
+    "ComplianceRequirement": {
+      "title": "ComplianceRequirement",
+      "description": "Infrastructure compliance requirement audit item with check-off status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "code": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "gate": { "type": "string" },
+        "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["Compliant", "In Progress", "Flagged", "N/A"] },
+        "isChecked": { "type": "boolean" },
+        "checkedBy": { "type": "string" },
+        "checkedByUserId": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "assignedToEmail": { "type": "string" },
+        "assignedToRole": { "type": "string" },
+        "assignedAt": { "type": "string" },
+        "evidenceThreshold": { "type": "string" },
+        "dueDate": { "type": "string" },
+        "auditorNotes": { "type": "string" },
+        "auditorName": { "type": "string" },
+        "auditedAt": { "type": "string" },
+        "documentRef": { "type": "string" },
+        "created_datetime": { "type": "string" },
+        "updated_datetime": { "type": "string" }
+      },
+      "required": ["id", "code", "title", "gate", "category", "status"]
+    },
+    "ComplianceComment": {
+      "title": "ComplianceComment",
+      "description": "Threaded team discussion comments and replies for compliance requirements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "requirementId": { "type": "string" },
+        "parentId": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "authorAvatarColor": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "resolved", "clarification-needed"] },
+        "resolvedBy": { "type": "string" },
+        "resolvedAt": { "type": "string" },
+        "likes": { "type": "number" },
+        "likedBy": { "type": "array" }
+      },
+      "required": ["id", "requirementId", "content", "createdAt", "authorName", "authorRole"]
+    },
+    "AuditActivity": {
+      "title": "AuditActivity",
+      "description": "Global activity feed logging status transitions, bulk operations, and audit actions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "requirementId": { "type": "string" },
+        "requirementCode": { "type": "string" },
+        "affectedCount": { "type": "number" },
+        "fromStatus": { "type": "string" },
+        "toStatus": { "type": "string" },
+        "assignedTo": { "type": "string" },
+        "actorName": { "type": "string" },
+        "actorRole": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "gate": { "type": "string" }
+      },
+      "required": ["id", "type", "title", "actorName", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Projects under assurance review"
+    },
+    "/criteria/{criterionId}": {
+      "schema": "Criterion",
+      "description": "Gateway review criteria"
+    },
+    "/results/{resultId}": {
+      "schema": "Result",
+      "description": "Assurance findings and status"
+    },
+    "/files/{fileId}": {
+      "schema": "File",
+      "description": "Document bundle metadata"
+    },
+    "/ratings/{ratingId}": {
+      "schema": "Rating",
+      "description": "Reviewer feedback on results"
+    },
+    "/evaluations/{evaluationId}": {
+      "schema": "Evaluation",
+      "description": "Gemini compliance evaluations"
+    },
+    "/compliance_requirements/{reqId}": {
+      "schema": "ComplianceRequirement",
+      "description": "Project compliance requirements and audit check-offs"
+    },
+    "/compliance_comments/{commentId}": {
+      "schema": "ComplianceComment",
+      "description": "Threaded team comments and discussion replies for compliance items"
+    },
+    "/compliance_activities/{activityId}": {
+      "schema": "AuditActivity",
+      "description": "Global audit activity stream logging status transitions and bulk actions"
+    }
+  }
+}
