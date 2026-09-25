@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.16.1] - 2026-09-25
+
+### Summary
+Diagnosed and resolved 4 client-side gRPC `PERMISSION_DENIED` stream errors by restoring direct Firebase client initialization from `firebase-applet-config.json`, establishing a strict single-secret architecture centered exclusively on server-side `GEMINI_API_KEY`, pruning redundant `NEXT_PUBLIC_FIREBASE_*` environment dependencies, and verifying real-time Firestore synchronization on database `ai-studio-scout-d32152a8-4a4e-4ea6-84c3-214b5ae51fa5`.
+
+---
+
+### Added & Enhanced
+
+#### 1. Real-Time Stream Diagnostics & Permission Denial Resolution
+- **Root Cause Analysis**: Identified that Next.js Webpack compile-time bundling of unpopulated `NEXT_PUBLIC_FIREBASE_*` environment variables caused client instances to attempt gRPC `Listen` streams against mismatched resource targets, triggering 4 concurrent/sequential `7 PERMISSION_DENIED` stream errors.
+- **Affected Stream Components Verified**:
+  - `GlobalHeaderSearch.tsx` (`onSnapshot` on `compliance_requirements`)
+  - `ComplianceTracker.tsx` (`onSnapshot` on `compliance_requirements` & `compliance_comments`)
+  - `GlobalActivityFeed.tsx` (`onSnapshot` on `compliance_activities`)
+  - `ComplianceItemComments.tsx` (`onSnapshot` on comment threads)
+- **Direct Configuration Restoration (`frontend/lib/firebase.ts`)**: Reverted dynamic `process.env` indirection to direct ingestion from `firebase-applet-config.json`, ensuring immediate and exact binding to Firestore database `ai-studio-scout-d32152a8-4a4e-4ea6-84c3-214b5ae51fa5`.
+
+#### 2. Single-Secret Architecture & Environment Pruning
+- **Streamlined Secret Management**:
+  - Established a strict single-secret standard: only `GEMINI_API_KEY` is required in the environment and Secrets panel.
+  - Formally deprecated all `NEXT_PUBLIC_FIREBASE_*` secrets and duplicate `GOOGLE_GENAI_API_KEY` entries from the environment configuration.
+  - Updated `.env.example` to remove obsolete client variable placeholders, maintaining strict isolation for server-side evaluation endpoints (`/api/evaluate`).
+
+#### 3. Security Rules Synchronization & Dev Server Verification
+- **Firestore Security Rules**: Deployed validated rules allowing structured read/write operations across all compliance schema collections via `deploy_firebase`.
+- **Cache Purge & Dev Server Recovery**: Purged `.next` build caches, restarted the dev server on port 3000 (`HTTP/1.1 200 OK`), and confirmed zero linting and compilation errors.
+
+---
+
 ## [2.16.0] - 2026-09-25
 
 ### Summary
