@@ -27,6 +27,7 @@ import {
   ComplianceStatusTransition,
   synthesizeItemTransitions
 } from '@/lib/seedData';
+import { getPriorityInfo } from '@/utils/priorityUtils';
 
 interface ComplianceTransitionTimelineProps {
   selectedItem?: ComplianceRequirementItem | null;
@@ -601,12 +602,22 @@ export const ComplianceTransitionTimeline: React.FC<ComplianceTransitionTimeline
               <span aria-hidden="true">·</span>
               <span>{activeItem.category}</span>
               <span aria-hidden="true">·</span>
-              <span style={{
-                fontWeight: 700,
-                color: activeItem.priority === 'Critical' ? '#dc2626' : activeItem.priority === 'High' ? '#ea580c' : '#475569'
-              }}>
-                {activeItem.priority} Priority
-              </span>
+              {(() => {
+                const prio = getPriorityInfo(activeItem.priority);
+                return (
+                  <span style={{
+                    fontSize: '0.725rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: prio.bg,
+                    color: prio.text,
+                    border: `1px solid ${prio.border}`
+                  }}>
+                    {prio.icon} {prio.label}
+                  </span>
+                );
+              })()}
             </div>
 
             <h3 style={{

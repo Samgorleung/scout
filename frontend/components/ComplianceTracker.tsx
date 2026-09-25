@@ -51,6 +51,12 @@ import {
   formatFriendlyDate,
   DeadlineInfo
 } from '@/utils/deadlineUtils';
+import {
+  getPriorityInfo,
+  PRIORITY_OPTIONS,
+  PriorityLevel,
+  normalizePriority
+} from '@/utils/priorityUtils';
 import { db, bulkUpdateComplianceRequirements, logAuditActivity } from '@/lib/firebase';
 import {
   collection,
@@ -157,6 +163,7 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
   const [isBulkStatusDropdownOpen, setIsBulkStatusDropdownOpen] = useState<boolean>(false);
   const [isBulkAssignDropdownOpen, setIsBulkAssignDropdownOpen] = useState<boolean>(false);
   const [isBulkDateDropdownOpen, setIsBulkDateDropdownOpen] = useState<boolean>(false);
+  const [isBulkPriorityDropdownOpen, setIsBulkPriorityDropdownOpen] = useState<boolean>(false);
   const [bulkDueDateInput, setBulkDueDateInput] = useState<string>('');
   const [isBulkProcessing, setIsBulkProcessing] = useState<boolean>(false);
   const [bulkNotification, setBulkNotification] = useState<string | null>(null);
@@ -1261,6 +1268,118 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
     }
   };
 
+  // Single Item Direct Priority Update Handler (High, Medium, Low)
+  const handleUpdatePriority = async (itemId: string, newPriority: 'High' | 'Medium' | 'Low') => {
+    const now = new Date().toISOString();
+    const targetReq = requirements.find(r => r.id === itemId);
+    const prevPriority = targetReq?.priority;
+
+    // Optimistic UI state update
+    setRequirements(prev =>
+      prev.map(r => (r.id === itemId ? { ...r, priority: newPriority, updated_datetime: now } : r))
+    );
+
+    // Keep active timeline and discussion drawer items synchronized
+    setSelectedTimelineItem(prev => (prev && prev.id === itemId ? { ...prev, priority: newPriority } : prev));
+    setSelectedCommentsItem(prev => (prev && prev.id === itemId ? { ...prev, priority: newPriority } : prev));
+
+    try {
+      const docRef = doc(db, 'compliance_requirements', itemId);
+      await updateDoc(docRef, {
+        priority: newPriority,
+        updated_datetime: now
+      });
+
+      // Log global audit activity
+      try {
+        await logAuditActivity({
+          id: `act_priority_${itemId}_${Date.now()}`,
+          type: 'note_update',
+          title: `Priority updated to ${newPriority} on ${targetReq?.code || itemId}`,
+          description: `${currentUser.name} (${currentUser.role}) changed priority of ${targetReq?.code}: "${targetReq?.title || ''}" from ${prevPriority || 'Unset'} to ${newPriority}.`,
+          requirementId: itemId,
+          requirementCode: targetReq?.code,
+          requirementTitle: targetReq?.title,
+          actorName: currentUser.name,
+          actorRole: currentUser.role,
+          actorEmail: currentUser.email,
+          timestamp: now,
+          gate: targetReq?.gate,
+          notes: `Priority classified as ${newPriority} to focus stakeholder and audit attention.`
+        });
+      } catch (actErr) {
+        console.warn('Activity feed logging failed:', actErr);
+      }
+
+      setBulkNotification(`✓ Set ${targetReq?.code || 'requirement'} priority to ${newPriority}.`);
+      setTimeout(() => setBulkNotification(null), 3500);
+    } catch (err) {
+      console.warn('Direct priority update failed, using API fallback:', err);
+      try {
+        await fetch('/api/compliance_requirements', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: itemId, priority: newPriority, updated_datetime: now })
+        });
+      } catch (apiErr) {
+        console.error('API priority update failed:', apiErr);
+      }
+    }
+  };
+
+  // Bulk Priority Update Handler
+  const handleBulkPriorityUpdate = async (newPriority: 'High' | 'Medium' | 'Low') => {
+    if (selectedItemIds.size === 0) return;
+    setIsBulkProcessing(true);
+    setIsBulkPriorityDropdownOpen(false);
+
+    const idsToUpdate = Array.from(selectedItemIds);
+    const now = new Date().toISOString();
+
+    // Optimistic UI state update
+    setRequirements(prev =>
+      prev.map(r => {
+        if (!selectedItemIds.has(r.id)) return r;
+        return { ...r, priority: newPriority, updated_datetime: now };
+      })
+    );
+
+    try {
+      await bulkUpdateComplianceRequirements(idsToUpdate, {
+        priority: newPriority,
+        updated_datetime: now
+      });
+
+      const affectedCodes = idsToUpdate.map(id => requirements.find(r => r.id === id)?.code || id);
+      try {
+        await logAuditActivity({
+          id: `act_bulk_priority_${Date.now()}`,
+          type: 'bulk_status_update',
+          title: `Bulk Priority Update: ${idsToUpdate.length} items set to ${newPriority}`,
+          description: `Assigned unified ${newPriority} priority across ${idsToUpdate.length} compliance requirements.`,
+          affectedCount: idsToUpdate.length,
+          affectedRequirementIds: idsToUpdate,
+          affectedRequirementCodes: affectedCodes,
+          actorName: currentUser.name,
+          actorRole: currentUser.role,
+          actorEmail: currentUser.email,
+          timestamp: now,
+          gate: selectedGate === 'ALL' ? currentGate : selectedGate,
+          notes: `Batch priority adjustment applied to ${idsToUpdate.length} requirements.`
+        });
+      } catch (actErr) {
+        console.warn('Activity feed logging failed:', actErr);
+      }
+
+      setBulkNotification(`✓ Set ${idsToUpdate.length} requirements to ${newPriority} priority.`);
+      setTimeout(() => setBulkNotification(null), 4500);
+    } catch (err) {
+      console.error('Bulk priority update failed:', err);
+    } finally {
+      setIsBulkProcessing(false);
+    }
+  };
+
   // Toggle Accordion Drawer
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1381,7 +1500,12 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
 
       const matchesGate = selectedGate === 'ALL' || r.gate === selectedGate;
       const matchesCategory = selectedCategory === 'ALL' || r.category === selectedCategory;
-      const matchesPriority = selectedPriority === 'ALL' || r.priority === selectedPriority;
+      const matchesPriority =
+        selectedPriority === 'ALL' ||
+        r.priority === selectedPriority ||
+        normalizePriority(r.priority) === selectedPriority ||
+        (selectedPriority === 'High' && (r.priority === 'Critical' || normalizePriority(r.priority) === 'High')) ||
+        (selectedPriority === 'Critical' && (r.priority === 'Critical' || normalizePriority(r.priority) === 'High'));
 
       const matchesStatus =
         selectedStatus === 'ALL' ||
@@ -1459,6 +1583,11 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
       return d.isDueSoon && !r.isChecked;
     }).length;
 
+    // Priority level metrics
+    const highPriorityCount = requirements.filter(r => normalizePriority(r.priority) === 'High').length;
+    const mediumPriorityCount = requirements.filter(r => normalizePriority(r.priority) === 'Medium').length;
+    const lowPriorityCount = requirements.filter(r => normalizePriority(r.priority) === 'Low').length;
+
     const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
     const compliantPct = total > 0 ? (compliant / total) * 100 : 0;
     const inProgressPct = total > 0 ? (inProgress / total) * 100 : 0;
@@ -1501,6 +1630,9 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
       urgentDeadlineCount,
       overdueCount,
       dueSoonCount,
+      highPriorityCount,
+      mediumPriorityCount,
+      lowPriorityCount,
       percentage,
       compliantPct,
       inProgressPct,
@@ -3017,7 +3149,7 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
           </div>
 
           {/* Priority Filter */}
-          <div style={{ minWidth: '130px' }}>
+          <div style={{ minWidth: '150px' }}>
             <select
               value={selectedPriority}
               onChange={(e) => setSelectedPriority(e.target.value)}
@@ -3028,16 +3160,15 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
                 borderRadius: '8px',
                 fontSize: '0.825rem',
                 backgroundColor: '#ffffff',
-                color: selectedPriority === 'Critical' ? '#dc2626' : '#1e293b',
+                color: selectedPriority === 'High' || selectedPriority === 'Critical' ? '#b91c1c' : selectedPriority === 'Medium' ? '#b45309' : '#1e293b',
                 cursor: 'pointer',
                 fontWeight: selectedPriority !== 'ALL' ? 700 : 500
               }}
             >
               <option value="ALL">All Priorities</option>
-              <option value="Critical">Critical Priority</option>
-              <option value="High">High Priority</option>
-              <option value="Medium">Medium Priority</option>
-              <option value="Low">Low Priority</option>
+              <option value="High">🔴 High Priority ({metrics.highPriorityCount})</option>
+              <option value="Medium">🟠 Medium Priority ({metrics.mediumPriorityCount})</option>
+              <option value="Low">⚪ Low Priority ({metrics.lowPriorityCount})</option>
             </select>
           </div>
 
@@ -3153,6 +3284,40 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
             </span>
           </button>
 
+          {/* Prominent High Priority / Critical Tasks Filter Button */}
+          <button
+            onClick={() => setSelectedPriority(selectedPriority === 'High' ? 'ALL' : 'High')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              border: `1.5px solid ${selectedPriority === 'High' ? '#ef4444' : metrics.highPriorityCount > 0 ? '#fca5a5' : '#cbd5e1'}`,
+              backgroundColor: selectedPriority === 'High' ? '#fef2f2' : metrics.highPriorityCount > 0 ? '#fffaf9' : '#ffffff',
+              color: selectedPriority === 'High' ? '#b91c1c' : metrics.highPriorityCount > 0 ? '#dc2626' : '#475569',
+              fontSize: '0.8125rem',
+              fontWeight: selectedPriority === 'High' ? 700 : 600,
+              cursor: 'pointer',
+              boxShadow: selectedPriority === 'High' ? '0 1px 4px rgba(220, 38, 38, 0.25)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+            title="Filter checklist to High Priority / Critical compliance tasks"
+          >
+            <span style={{ fontSize: '0.85rem' }}>🔴</span>
+            <span>High Priority</span>
+            <span style={{
+              fontSize: '0.7rem',
+              fontWeight: 800,
+              padding: '1px 6px',
+              borderRadius: '10px',
+              backgroundColor: selectedPriority === 'High' ? '#fee2e2' : metrics.highPriorityCount > 0 ? '#fecaca' : '#f1f5f9',
+              color: selectedPriority === 'High' ? '#991b1b' : metrics.highPriorityCount > 0 ? '#b91c1c' : '#64748b'
+            }}>
+              {metrics.highPriorityCount}
+            </span>
+          </button>
+
           {/* My Verified Items Toggle Pill */}
           <button
             onClick={() => setOnlyMyChecked(!onlyMyChecked)}
@@ -3218,19 +3383,22 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
             <span>⚠️ Due in ≤ 3 Days ({metrics.urgentDeadlineCount})</span>
           </button>
           <button
-            onClick={() => { setSelectedPriority('Critical'); }}
+            onClick={() => { setSelectedPriority(selectedPriority === 'High' ? 'ALL' : 'High'); }}
             style={{
               padding: '3px 8px',
               borderRadius: '4px',
               fontSize: '0.75rem',
-              fontWeight: 600,
-              backgroundColor: selectedPriority === 'Critical' ? '#fee2e2' : '#f8fafc',
-              border: '1px solid #fecaca',
-              color: '#dc2626',
-              cursor: 'pointer'
+              fontWeight: 700,
+              backgroundColor: selectedPriority === 'High' ? '#fee2e2' : '#f8fafc',
+              border: `1px solid ${selectedPriority === 'High' ? '#fca5a5' : '#e2e8f0'}`,
+              color: selectedPriority === 'High' ? '#b91c1c' : '#dc2626',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px'
             }}
           >
-            🔥 Critical Priorities
+            <span>🔴 High Priority ({metrics.highPriorityCount})</span>
           </button>
           <button
             onClick={() => { setSelectedStatus('Flagged'); }}
@@ -3381,11 +3549,12 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
                 alignItems: 'center',
                 gap: '4px',
                 fontSize: '0.75rem',
-                backgroundColor: selectedPriority === 'Critical' ? '#fee2e2' : '#fef3c7',
-                color: selectedPriority === 'Critical' ? '#b91c1c' : '#b45309',
+                backgroundColor: selectedPriority === 'High' || selectedPriority === 'Critical' ? '#fee2e2' : selectedPriority === 'Medium' ? '#fffbeb' : '#f1f5f9',
+                color: selectedPriority === 'High' || selectedPriority === 'Critical' ? '#b91c1c' : selectedPriority === 'Medium' ? '#b45309' : '#475569',
+                border: `1px solid ${selectedPriority === 'High' || selectedPriority === 'Critical' ? '#fecaca' : selectedPriority === 'Medium' ? '#fde68a' : '#cbd5e1'}`,
                 padding: '2px 8px',
                 borderRadius: '12px',
-                fontWeight: 600
+                fontWeight: 700
               }}>
                 Priority: {selectedPriority}
                 <CloseIcon onClick={() => setSelectedPriority('ALL')} style={{ fontSize: '0.85rem', cursor: 'pointer' }} />
@@ -3936,6 +4105,121 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
                 )}
               </div>
 
+              {/* Bulk Set Priority Dropdown Button */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => {
+                    setIsBulkPriorityDropdownOpen(!isBulkPriorityDropdownOpen);
+                    setIsBulkStatusDropdownOpen(false);
+                    setIsBulkAssignDropdownOpen(false);
+                    setIsBulkDateDropdownOpen(false);
+                  }}
+                  disabled={isBulkProcessing}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    backgroundColor: '#ffffff',
+                    color: '#991b1b',
+                    border: '1.5px solid #fecaca',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: isBulkProcessing ? 'wait' : 'pointer'
+                  }}
+                >
+                  <span>🎯 Set Priority ({selectedItemIds.size})</span>
+                  <DropdownArrowIcon style={{ fontSize: '1rem' }} />
+                </button>
+
+                {isBulkPriorityDropdownOpen && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '4px',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '8px',
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+                    border: '1px solid #e2e8f0',
+                    zIndex: 100,
+                    minWidth: '220px',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', borderBottom: '1px solid #f1f5f9' }}>
+                      SET PRIORITY FOR {selectedItemIds.size} REQUIREMENTS
+                    </div>
+                    <button
+                      onClick={() => handleBulkPriorityUpdate('High')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.8125rem',
+                        color: '#b91c1c',
+                        fontWeight: 700
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fef2f2')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <span>🔴</span>
+                      <span>High Priority (Critical focus)</span>
+                    </button>
+                    <button
+                      onClick={() => handleBulkPriorityUpdate('Medium')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.8125rem',
+                        color: '#b45309',
+                        fontWeight: 600
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#fffbeb')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <span>🟠</span>
+                      <span>Medium Priority (Standard)</span>
+                    </button>
+                    <button
+                      onClick={() => handleBulkPriorityUpdate('Low')}
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '10px 14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.8125rem',
+                        color: '#475569',
+                        fontWeight: 600
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <span>⚪</span>
+                      <span>Low Priority (Routine)</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Bulk Verify Button */}
               <button
                 onClick={() => handleBulkCheckToggle(true)}
@@ -4218,18 +4502,56 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
                     )}
                   </div>
 
-                  {/* Priority Badge */}
-                  <div style={{ flexShrink: 0 }}>
-                    <span style={{
-                      fontSize: '0.725rem',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      backgroundColor: req.priority === 'Critical' ? '#fee2e2' : req.priority === 'High' ? '#ffedd5' : '#f1f5f9',
-                      color: req.priority === 'Critical' ? '#991b1b' : req.priority === 'High' ? '#c2410c' : '#475569'
-                    }}>
-                      {req.priority}
-                    </span>
+                  {/* Priority Dropdown Field & Color-Coded Badge */}
+                  <div
+                    style={{ flexShrink: 0, position: 'relative' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {(() => {
+                      const prio = getPriorityInfo(req.priority);
+                      return (
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            position: 'relative'
+                          }}
+                          title={`Priority: ${prio.label} (${prio.description}). Click to change.`}
+                        >
+                          <select
+                            value={prio.level}
+                            onChange={(e) => handleUpdatePriority(req.id, e.target.value as 'High' | 'Medium' | 'Low')}
+                            aria-label={`Priority for ${req.code}`}
+                            style={{
+                              fontSize: '0.725rem',
+                              fontWeight: 700,
+                              padding: '3px 8px',
+                              borderRadius: '5px',
+                              backgroundColor: prio.bg,
+                              color: prio.text,
+                              border: `1.5px solid ${prio.border}`,
+                              cursor: 'pointer',
+                              outline: 'none',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              boxShadow: prio.isHigh ? '0 1px 3px rgba(220, 38, 38, 0.15)' : 'none',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <option value="High" style={{ backgroundColor: '#ffffff', color: '#b91c1c', fontWeight: 700 }}>
+                              🔴 High
+                            </option>
+                            <option value="Medium" style={{ backgroundColor: '#ffffff', color: '#b45309', fontWeight: 600 }}>
+                              🟠 Medium
+                            </option>
+                            <option value="Low" style={{ backgroundColor: '#ffffff', color: '#475569', fontWeight: 500 }}>
+                              ⚪ Low
+                            </option>
+                          </select>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Assigned Member Badge & Popover */}
@@ -4630,6 +4952,58 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
                               Clear
                             </button>
                           )}
+                        </div>
+                      </div>
+
+                      {/* Priority Level & Task Focus Section */}
+                      <div style={{ backgroundColor: '#ffffff', padding: '12px', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#4b5563', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span>🎯 Priority Level (Task Focus)</span>
+                          {(() => {
+                            const prio = getPriorityInfo(req.priority);
+                            return (
+                              <span style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                backgroundColor: prio.bg,
+                                color: prio.text,
+                                border: `1px solid ${prio.border}`
+                              }}>
+                                {prio.icon} {prio.label}
+                              </span>
+                            );
+                          })()}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#4b5563', marginBottom: '8px', lineHeight: 1.4 }}>
+                          {getPriorityInfo(req.priority).description}
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.725rem', fontWeight: 600, color: '#64748b', marginBottom: '4px' }}>
+                            Change Priority Level:
+                          </label>
+                          <select
+                            value={normalizePriority(req.priority)}
+                            onChange={(e) => handleUpdatePriority(req.id, e.target.value as 'High' | 'Medium' | 'Low')}
+                            style={{
+                              width: '100%',
+                              padding: '6px 10px',
+                              borderRadius: '5px',
+                              border: `1.5px solid ${getPriorityInfo(req.priority).border}`,
+                              backgroundColor: getPriorityInfo(req.priority).bg,
+                              color: getPriorityInfo(req.priority).text,
+                              fontSize: '0.8125rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {PRIORITY_OPTIONS.map(opt => (
+                              <option key={opt.value} value={opt.value} style={{ backgroundColor: '#ffffff', color: opt.text }}>
+                                {opt.value === 'High' ? '🔴' : opt.value === 'Medium' ? '🟠' : '⚪'} {opt.label} — {opt.description}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -5045,17 +5419,16 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#374151', marginBottom: '4px' }}>
-                    Priority
+                    Priority (High, Medium, Low)
                   </label>
                   <select
-                    value={newReqForm.priority}
+                    value={normalizePriority(newReqForm.priority)}
                     onChange={(e) => setNewReqForm({ ...newReqForm, priority: e.target.value as any })}
-                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '4px', backgroundColor: '#fff' }}
+                    style={{ width: '100%', padding: '8px', border: '1px solid #d1d5db', borderRadius: '4px', backgroundColor: '#fff', fontWeight: 600 }}
                   >
-                    <option value="Critical">Critical</option>
-                    <option value="High">High</option>
-                    <option value="Medium">Medium</option>
-                    <option value="Low">Low</option>
+                    <option value="High">🔴 High Priority (Critical focus)</option>
+                    <option value="Medium">🟠 Medium Priority (Standard)</option>
+                    <option value="Low">⚪ Low Priority (Routine)</option>
                   </select>
                 </div>
               </div>

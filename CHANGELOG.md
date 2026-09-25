@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.16.0] - 2026-09-25
+
+### Summary
+Enhanced application security with repository-wide secret hardening and environment variable configuration standards, introduced dynamic client environment fallbacks for Cloud Firestore and Gemini AI services, optimized direct inline priority selector controls with optimistic state updates, and stabilized Next.js dev server execution.
+
+---
+
+### Added & Enhanced
+
+#### 1. Security Hardening & Secret Governance (`.gitignore`, `.env.example`)
+- **Repository-Wide `.gitignore` Rules**:
+  - Excluded all `.env*`, `*.env`, `*.env.local`, `*.env.*.local`, and `frontend/.env*` files to prevent leakage of development credentials.
+  - Restricted cryptographic and private keys (`*.pem`, `*.key`, `*.cert`).
+  - Blocked GCP service account keys and credentials files (`*credentials*.json`, `*service-account*.json`).
+- **Standardized Environment Configuration (`.env.example`)**:
+  - Provided clean template documenting required environment variables for Gemini API (`GEMINI_API_KEY`, `GOOGLE_GENAI_API_KEY`) and Firebase Cloud Firestore (`NEXT_PUBLIC_FIREBASE_PROJECT_ID`, `NEXT_PUBLIC_FIREBASE_APP_ID`, `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, `NEXT_PUBLIC_FIREBASE_DATABASE_ID`, `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`, `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`).
+
+#### 2. Dynamic Firebase Client Configuration (`frontend/lib/firebase.ts`)
+- **Environment Variable Resolution**:
+  - Updated Firebase client initialization to dynamically prioritize `NEXT_PUBLIC_FIREBASE_*` environment variables over bundled defaults.
+  - Ensured seamless portability between local development, preview deployments, and isolated production clusters.
+
+#### 3. Direct Inline Priority Selector & Optimistic Updates (`components/ComplianceTracker.tsx`)
+- **Single-Item Priority Mutation (`handleUpdatePriority`)**:
+  - Enabled one-click direct priority modification (`High` / `Medium` / `Low`) directly within checklist rows and detail drawers.
+  - Implemented optimistic UI state updates for zero-latency response with automatic rollback on network failure.
+  - Synchronized changes in real time with Google Cloud Firestore and logged auditable timeline activity records.
+
+#### 4. Development Server & Next.js Build Stabilization
+- **Dev Server Process Recovery**:
+  - Cleaned stale `.next` Webpack compilation cache to resolve hydration and module resolution anomalies.
+  - Restored active server listening on `http://localhost:3000` (`0.0.0.0:3000`) with validated `HTTP/1.1 200 OK` health status.
+  - Confirmed 100% clean compilation via `compile_applet` and zero linting warnings across all Next.js pages.
+
+---
+
 ## [2.15.0] - 2026-09-25
 
 ### Summary

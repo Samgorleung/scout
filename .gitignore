@@ -1,5 +1,14 @@
 .venv*
-.env
+.env*
+*.env
+*.env.local
+*.env.*.local
+frontend/.env*
+*.pem
+*.key
+*.cert
+*credentials*.json
+*service-account*.json
 .pyenv
 .vscode
 .idea

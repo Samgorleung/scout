@@ -100,6 +100,7 @@
         "description": { "type": "string" },
         "gate": { "type": "string" },
         "category": { "type": "string" },
+        "priority": { "type": "string", "enum": ["High", "Medium", "Low"] },
         "status": { "type": "string", "enum": ["Compliant", "In Progress", "Flagged", "N/A"] },
         "isChecked": { "type": "boolean" },
         "checkedBy": { "type": "string" },
