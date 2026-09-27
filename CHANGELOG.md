@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.22.0] - 2026-09-27
+
+### Summary
+Built a comprehensive local CSV reporting and export utility (`exportEvaluationFindingsCsv` in `utils/exportComplianceCsv.ts`) for project evaluation findings, analytical justifications, and filtered search results. Integrated one-click CSV export buttons with dynamic item counts into both the executive header summary and the `EvaluationSearchBar` component on the Review Findings surface.
+
+---
+
+### Added & Enhanced
+
+#### 1. Evaluation Findings CSV Reporting Utility (`frontend/utils/exportComplianceCsv.ts`)
+- **`exportEvaluationFindingsCsv(options)`**:
+  - Implements standard RFC-4180 CSV generation with recursive character escaping and `\uFEFF` UTF-8 BOM encoding for seamless Microsoft Excel and Apple Numbers compatibility.
+  - Comprehensive reporting schema covering:
+    - `Finding ID` & `Project Name`
+    - `Gateway Review Phase` (e.g., Gate 2: Delivery Strategy)
+    - `Assurance Category` (Commercial, Financial, Management, Strategic)
+    - `Evaluation Question / Criterion`
+    - `Assurance Status` (`Positive`, `Negative`, `Neutral`)
+    - `Risk Profile` (High Risk / Non-Compliant Finding, Low Risk / Validated Criteria, Neutral)
+    - `Confidence Score` & `Evidence Excerpt`
+    - `Analytical Justification & Findings`
+    - `Cited Source Documents` (with page references where applicable)
+    - `Evaluation Timestamp`
+    - `Filter Scope Description` (documents active query, category, and status filters applied at the moment of export)
+    - `Export Date & Time`
+  - Automated timestamped filename generation: `IPA_Evaluation_Findings_{Project}_{Scope}_{Date}.csv`.
+
+#### 2. Review Findings UI Integration (`frontend/pages/results.tsx` & `components/EvaluationSearchBar.tsx`)
+- **Executive Header Export Button**:
+  - Prominent "Export CSV" button placed directly in the top KPI summary cluster alongside the Positive, Negative, and Neutral metrics.
+- **Search Bar Integrated Export Button**:
+  - Added dynamic `Export CSV (X)` button inside `EvaluationSearchBar.tsx` that updates in real time to reflect the number of matching filtered items.
+  - Automatically disables when no items match the filter criteria.
+- **Telemetry & Event Tracking**:
+  - Logs `export_evaluation_csv` telemetry events with item counts, active search queries, and filter parameters via `logger.trackEvent`.
+
+---
+
 ## [2.21.0] - 2026-09-27
 
 ### Summary

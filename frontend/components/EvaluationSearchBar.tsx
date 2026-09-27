@@ -5,7 +5,8 @@ import {
   FilterList as FilterIcon,
   ArrowBackIosNew as PrevIcon,
   ArrowForwardIos as NextIcon,
-  RestartAlt as ResetIcon
+  RestartAlt as ResetIcon,
+  FileDownload as DownloadIcon
 } from '@mui/icons-material';
 
 export interface EvaluationSearchBarProps {
@@ -23,6 +24,8 @@ export interface EvaluationSearchBarProps {
   onQuickNavigateNext?: () => void;
   onQuickNavigatePrev?: () => void;
   currentIndex?: number;
+  onExportCsv?: () => void;
+  isExporting?: boolean;
 }
 
 export const EvaluationSearchBar: React.FC<EvaluationSearchBarProps> = ({
@@ -39,7 +42,9 @@ export const EvaluationSearchBar: React.FC<EvaluationSearchBarProps> = ({
   onClearFilters,
   onQuickNavigateNext,
   onQuickNavigatePrev,
-  currentIndex
+  currentIndex,
+  onExportCsv,
+  isExporting = false
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -270,6 +275,45 @@ export const EvaluationSearchBar: React.FC<EvaluationSearchBarProps> = ({
           >
             <ResetIcon style={{ fontSize: '1rem' }} />
             <span>Reset Filters</span>
+          </button>
+        )}
+
+        {/* Export Current View / Filtered Results to CSV */}
+        {onExportCsv && (
+          <button
+            type="button"
+            onClick={onExportCsv}
+            disabled={filteredCount === 0 || isExporting}
+            aria-label="Export evaluation items to CSV"
+            title={`Export ${filteredCount} ${hasActiveFilters ? 'filtered' : ''} evaluation items to a local CSV file`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              backgroundColor: '#0f172a',
+              border: '1px solid #1e293b',
+              borderRadius: '8px',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              color: '#ffffff',
+              cursor: filteredCount === 0 || isExporting ? 'not-allowed' : 'pointer',
+              opacity: filteredCount === 0 ? 0.5 : 1,
+              transition: 'all 0.15s ease'
+            }}
+            onMouseOver={(e) => {
+              if (filteredCount > 0 && !isExporting) {
+                e.currentTarget.style.backgroundColor = '#1e293b';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (filteredCount > 0 && !isExporting) {
+                e.currentTarget.style.backgroundColor = '#0f172a';
+              }
+            }}
+          >
+            <DownloadIcon style={{ fontSize: '1rem', color: '#38bdf8' }} />
+            <span>{isExporting ? 'Exporting...' : `Export CSV (${filteredCount})`}</span>
           </button>
         )}
       </div>

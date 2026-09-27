@@ -16,13 +16,16 @@ import {
   Help as HelpIcon,
   ArrowBack as ArrowBackIcon,
   ArrowBackIosNew as PrevIcon,
-  ArrowForwardIos as NextIcon
+  ArrowForwardIos as NextIcon,
+  FileDownload as DownloadIcon
 } from '@mui/icons-material';
 
 import { fetchItems, fetchRelatedItems, rateResponse } from '@/utils/api';
 import { ResultsSkeleton } from '@/components/LoadingSystem';
 import { useSearch } from '@/context/SearchContext';
 import { EvaluationSearchBar } from '@/components/EvaluationSearchBar';
+import { exportEvaluationFindingsCsv } from '@/utils/exportComplianceCsv';
+import { logger } from '@/utils/logger';
 
 interface Rating {
   id: string;
@@ -195,11 +198,43 @@ const ResultsTable: React.FC = () => {
     setOpen(true);
   };
 
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+
   const handleClearFilters = () => {
     setGlobalSearchQuery('');
     setStatusFilter('ALL');
     setCategoryFilter('ALL');
   };
+
+  const handleExportCsv = useCallback(() => {
+    setIsExporting(true);
+    try {
+      exportEvaluationFindingsCsv({
+        projectName: 'A428 Black Cat to Caxton Gibbet Improvement',
+        currentGate: 'Gate 2: Delivery Strategy',
+        searchQuery: globalSearchQuery,
+        statusFilter,
+        categoryFilter,
+        totalCount: results.length,
+        items: filteredResults
+      });
+      logger.trackEvent(
+        'export_evaluation_csv',
+        {
+          totalCount: results.length,
+          exportedCount: filteredResults.length,
+          hasSearch: Boolean(globalSearchQuery),
+          statusFilter,
+          categoryFilter
+        },
+        'system'
+      );
+    } catch (err) {
+      logger.error('Failed to export evaluation findings CSV', { error: err }, 'system');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [results.length, filteredResults, globalSearchQuery, statusFilter, categoryFilter]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -549,6 +584,33 @@ const ResultsTable: React.FC = () => {
                 <span style={{ fontSize: '0.7rem', color: '#d97706', textTransform: 'uppercase', fontWeight: 600, display: 'block' }}>Neutral</span>
                 <span style={{ fontSize: '1rem', fontWeight: 700, color: '#b45309' }}>{neutralCount}</span>
               </div>
+
+              {/* Quick CSV Export Button in Executive Header */}
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                disabled={filteredResults.length === 0 || isExporting}
+                title={`Export ${filteredResults.length} evaluation findings to CSV`}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid #1e293b',
+                  borderRadius: '8px',
+                  color: '#ffffff',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: filteredResults.length === 0 || isExporting ? 'not-allowed' : 'pointer',
+                  opacity: filteredResults.length === 0 ? 0.5 : 1,
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  transition: 'background 0.15s ease'
+                }}
+              >
+                <DownloadIcon style={{ fontSize: '1rem', color: '#38bdf8' }} />
+                <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -569,6 +631,8 @@ const ResultsTable: React.FC = () => {
           onQuickNavigateNext={handleQuickNavigateNext}
           onQuickNavigatePrev={handleQuickNavigatePrev}
           currentIndex={currentSelectedIndex >= 0 ? currentSelectedIndex : undefined}
+          onExportCsv={handleExportCsv}
+          isExporting={isExporting}
         />
 
         {/* Evaluation Items Grid or Empty Filter State */}
