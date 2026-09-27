@@ -1421,7 +1421,7 @@ export default function PortfolioDashboard() {
                       paddingTop: '8px'
                     }}>
                       <span style={{ color: '#475569', fontFamily: 'monospace' }}>
-                        Due: {dl.dueDate} ({dl.leadOwner.split('(')[0].trim()})
+                        Due: {dl.dueDate} ({dl.leadOwner ? dl.leadOwner.split('(')[0].trim() : 'Unassigned'})
                       </span>
 
                       {/* Interactive status toggle */}
@@ -1542,7 +1542,7 @@ export default function PortfolioDashboard() {
                       {act.action}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>
-                      {act.projectName} · {act.actor.split('(')[0].trim()} · <span style={{ fontFamily: 'monospace' }}>{act.timestamp}</span>
+                      {act.projectName} · {act.actor ? act.actor.split('(')[0].trim() : (act.actorName || 'Reviewer')} · <span style={{ fontFamily: 'monospace' }}>{act.timestamp}</span>
                     </div>
                     {act.notesSnippet && (
                       <div style={{

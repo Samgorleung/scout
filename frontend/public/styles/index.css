@@ -99,3 +99,484 @@ code, pre, .font-mono {
   animation: shimmerWave 1.8s ease-in-out infinite;
 }
 
+/* ==========================================================================
+   PRINT MEDIA QUERY - Enterprise Project Evaluation & Audit Logs Formatting
+   ========================================================================== */
+@media print {
+  /* 1. Page Geometry & Base Colors */
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm 16mm 12mm;
+  }
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  html,
+  body {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .App {
+    background: #ffffff !important;
+    min-height: auto !important;
+    height: auto !important;
+    display: block !important;
+  }
+
+  /* 2. Remove Non-Printable Navigation & Interactive Chrome */
+  header.App-header,
+  .App-header,
+  .header-content,
+  .header-nav,
+  .header-actions,
+  .GlobalHeaderSearch,
+  [data-search-popover],
+  [role="search"],
+  .MuiModal-root > div[aria-hidden="true"],
+  .offline-notice-banner,
+  [role="alert"],
+  [role="status"]:not(.printable-status),
+  .global-loading-overlay,
+  [data-loading-overlay],
+  .connectivity-badge-popover,
+  button:not(.printable-button),
+  input,
+  select,
+  textarea,
+  .no-print,
+  .App-footer .footer-content a,
+  .footer-separator {
+    display: none !important;
+  }
+
+  /* 3. Main Viewport & Typography Adjustments */
+  .main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #0f172a !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  h1 {
+    font-size: 18pt !important;
+    margin-bottom: 6pt !important;
+  }
+
+  h2 {
+    font-size: 14pt !important;
+    margin-top: 10pt !important;
+    margin-bottom: 6pt !important;
+  }
+
+  h3 {
+    font-size: 12pt !important;
+    margin-top: 8pt !important;
+    margin-bottom: 4pt !important;
+  }
+
+  p, li, span {
+    orphans: 3;
+    widows: 3;
+  }
+
+  a {
+    color: #0f172a !important;
+    text-decoration: none !important;
+  }
+
+  /* 4. Project Evaluation Logs, Cards, & Section Breaks */
+  .summary-card,
+  .evaluation-item,
+  .log-entry,
+  .audit-log-card,
+  .activity-card,
+  .finding-card,
+  .evaluation-card,
+  [data-finding-item],
+  [data-audit-item] {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    padding: 10pt !important;
+    margin-bottom: 10pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 5. Ag-Grid & Table Containers Formatting for Text Wrapping & Page Fit */
+  .ag-theme-alpine,
+  .ag-theme-alpine-dark,
+  [class*="ag-theme-"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+  }
+
+  .ag-root-wrapper,
+  .ag-root-wrapper-body,
+  .ag-root,
+  .ag-body,
+  .ag-body-viewport,
+  .ag-center-cols-clipper,
+  .ag-center-cols-viewport,
+  .ag-center-cols-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    position: static !important;
+    contain: none !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Remove horizontal scrollbars, spacers, and pinned column wrappers in print */
+  .ag-body-horizontal-scroll,
+  .ag-body-vertical-scroll,
+  .ag-horizontal-left-spacer,
+  .ag-horizontal-right-spacer,
+  .ag-scroll-sizer,
+  .ag-header-cell-menu-button,
+  .ag-floating-filter,
+  .ag-header-cell-resize {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+  }
+
+  /* Convert Ag-Grid Header to a fluid printable flex layout */
+  .ag-header {
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    border-bottom: 2px solid #0f172a !important;
+    background-color: #f1f5f9 !important;
+    box-sizing: border-box !important;
+  }
+
+  .ag-header-viewport,
+  .ag-header-container,
+  .ag-header-row {
+    position: static !important;
+    transform: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+
+  .ag-header-cell {
+    position: static !important;
+    left: auto !important;
+    right: auto !important;
+    height: auto !important;
+    min-height: 28pt !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    padding: 6pt 8pt !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    font-size: 8.5pt !important;
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+  }
+
+  .ag-header-cell-label,
+  .ag-header-cell-text {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.3 !important;
+  }
+
+  /* Convert Ag-Grid Rows from absolute positioning to fluid vertical flow */
+  .ag-row,
+  .ag-row-even,
+  .ag-row-odd {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 32pt !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-sizing: border-box !important;
+    background-color: #ffffff !important;
+  }
+
+  .ag-row-odd {
+    background-color: #fbfcfe !important;
+  }
+
+  /* Ensure Ag-Grid Cells Wrap Long Text and Do Not Bleed Off the Page */
+  .ag-cell,
+  .ag-cell-value {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    padding: 6pt 8pt !important;
+    font-size: 8.5pt !important;
+    line-height: 1.4 !important;
+    color: #0f172a !important;
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    hyphens: auto !important;
+  }
+
+  /* Specific Column Width Balancing for Ag-Grid Print Layout */
+  .ag-header-cell[col-id="Criterion"],
+  .ag-cell[col-id="Criterion"] {
+    flex: 5 1 45% !important;
+    width: 45% !important;
+    max-width: 45% !important;
+    min-width: 0 !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+  }
+
+  .ag-header-cell[col-id="Category"],
+  .ag-cell[col-id="Category"] {
+    flex: 1.5 1 15% !important;
+    width: 15% !important;
+    max-width: 15% !important;
+    min-width: 0 !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  .ag-header-cell[col-id="Status"],
+  .ag-cell[col-id="Status"] {
+    flex: 1.2 1 12% !important;
+    width: 12% !important;
+    max-width: 12% !important;
+    min-width: 0 !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  .ag-header-cell[col-id="Sources"],
+  .ag-cell[col-id="Sources"] {
+    flex: 2.8 1 28% !important;
+    width: 28% !important;
+    max-width: 28% !important;
+    min-width: 0 !important;
+    text-align: left !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Internal Cell Typography & Element Wrapping */
+  .ag-cell > div,
+  .ag-cell p,
+  .ag-cell span,
+  .ag-cell-value > div {
+    max-width: 100% !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    text-overflow: clip !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Document Sources / Citation Chips Print Rendering */
+  .ag-cell[col-id="Sources"] span,
+  .ag-cell span[title] {
+    display: inline-block !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    word-break: break-all !important;
+    overflow-wrap: break-word !important;
+    padding: 2px 5px !important;
+    margin: 2px !important;
+    font-size: 7pt !important;
+    line-height: 1.25 !important;
+    border: 1px solid #cbd5e1 !important;
+    background-color: #f8fafc !important;
+    color: #1e293b !important;
+    border-radius: 3px !important;
+  }
+
+  /* Standard HTML Table Support */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  th,
+  td {
+    border: 1px solid #e2e8f0 !important;
+    padding: 6pt 8pt !important;
+    font-size: 8.5pt !important;
+    text-align: left !important;
+  }
+
+  th {
+    background-color: #f8fafc !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #94a3b8 !important;
+  }
+
+  /* 6. Evaluation Badges, Status Indicators, & Risk Highlights */
+  .badge,
+  [data-status-badge],
+  span[style*="border-radius: 9999px"],
+  span[style*="border-radius: 12px"],
+  span[style*="border-radius: 6px"],
+  span[style*="border-radius: 4px"] {
+    display: inline-block !important;
+    border: 1px solid currentColor !important;
+    padding: 2px 6pt !important;
+    font-weight: 700 !important;
+    font-size: 7.5pt !important;
+    letter-spacing: 0.02em !important;
+  }
+
+  /* Evaluation Justification, Evidence Boxes, & Audit Metadata */
+  blockquote,
+  pre,
+  code,
+  .evidence-box,
+  [data-evidence-snippet] {
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-left: 3px solid #1d70b8 !important;
+    padding: 6pt 8pt !important;
+    font-family: var(--font-mono, monospace) !important;
+    font-size: 8pt !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 7. Modal or Overlay View when Printing Open Inspection Dialogs */
+  .MuiModal-root {
+    position: static !important;
+    inset: auto !important;
+    overflow: visible !important;
+  }
+
+  .MuiModal-root > div[tabindex="-1"],
+  .MuiBox-root[tabindex="-1"],
+  [role="dialog"] {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
+    max-height: none !important;
+    height: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 12pt !important;
+    overflow: visible !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* 8. Audit Log Drawer & Timeline Feed Formatting */
+  .audit-feed-list,
+  .timeline-container,
+  [data-audit-feed] {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  /* 9. Print Document Footer Notice */
+  .App-footer {
+    position: static !important;
+    background: transparent !important;
+    border-top: 1px solid #cbd5e1 !important;
+    margin-top: 18pt !important;
+    padding: 8pt 0 !important;
+    font-size: 7.5pt !important;
+    color: #64748b !important;
+    page-break-inside: avoid !important;
+  }
+
+  .App-footer::after {
+    content: "Official Sensitivity: HM Treasury Gateway Review & Assurance System | Verified Print Evaluation Dossier";
+    display: block;
+    margin-top: 4pt;
+    font-weight: 600;
+    color: #475569;
+  }
+}
+

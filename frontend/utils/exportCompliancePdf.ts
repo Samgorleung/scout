@@ -582,22 +582,27 @@ export interface ExportPortfolioPdfOptions {
   deadlines?: Array<{
     id: string;
     projectName: string;
-    title: string;
+    title?: string;
+    milestoneTitle?: string;
     category: string;
-    dueDate: string;
+    dueDate?: string;
+    deadlineDate?: string;
     daysRemaining: number;
-    urgency: string;
-    leadOwner: string;
-    status: string;
+    urgency?: string;
+    leadOwner?: string;
+    status?: string;
+    [key: string]: any;
   }>;
   activities?: Array<{
     id: string;
-    projectName: string;
-    action: string;
-    actor: string;
-    timestamp: string;
-    type: string;
+    projectName?: string;
+    action?: string;
+    actor?: string;
+    actorName?: string;
+    timestamp?: string;
+    type?: string;
     gate?: string;
+    [key: string]: any;
   }>;
   filtersApplied?: {
     sector?: string;
@@ -1017,11 +1022,11 @@ export async function exportPortfolioCompliancePdf(options: ExportPortfolioPdfOp
 
     const deadlineRows = deadlines.slice(0, 10).map(dl => [
       dl.projectName,
-      dl.title,
+      dl.title || dl.milestoneTitle || 'Assurance Deliverable',
       dl.category,
-      new Date(dl.dueDate).toLocaleDateString('en-GB'),
+      dl.dueDate ? new Date(dl.dueDate).toLocaleDateString('en-GB') : (dl.deadlineDate || 'TBD'),
       dl.daysRemaining <= 0 ? 'Overdue' : `${dl.daysRemaining} days`,
-      dl.status
+      dl.status || 'Pending'
     ]);
 
     autoTable(doc, {

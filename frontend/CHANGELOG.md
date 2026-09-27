@@ -6,6 +6,77 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.25.0] - 2026-09-27
+
+### Summary
+Fixed the `Error fetching gate URL: Failed to fetch` runtime error in `frontend/utils/getGateUrl.ts` by replacing fragile runtime relative network `fetch('/gate_urls.json')` requests with direct bundled static JSON mappings and standard Gateway Phase key normalization.
+
+---
+
+### Fixed & Enhanced
+
+#### 1. Robust Gateway URL Resolution (`frontend/utils/getGateUrl.ts`)
+- Replaced runtime relative URL fetching with direct static bundling from `frontend/public/gate_urls.json`.
+- Added key normalization (`normalizeGateKey`) supporting multiple gateway representation formats (`GATE_0` through `GATE_4`, `Gate 2: Delivery Strategy`, `Strategic Assessment`, `Business Justification`, etc.).
+- Provided fallback to official HM Treasury & IPA Assurance Review Toolkit URL.
+
+---
+
+## [2.24.0] - 2026-09-27
+
+### Summary
+Added specific `@media print` CSS overrides for Ag-Grid table layouts in `frontend/public/styles/index.css` to guarantee that long textual content within evaluation cells wraps correctly, prevents horizontal clipping, and eliminates page edge bleed during PDF export or physical printing.
+
+---
+
+### Added & Enhanced
+
+#### 1. Ag-Grid Print Layout & Fluid Formatting (`frontend/public/styles/index.css`)
+- **Container & Viewport Geometry**:
+  - Overrode `.ag-root-wrapper`, `.ag-root`, `.ag-body`, `.ag-body-viewport`, `.ag-center-cols-clipper`, and `.ag-center-cols-container` to `position: static !important; overflow: visible !important; width: 100% !important; max-width: 100% !important; contain: none !important;` so that all rows render continuously down the page without clipping or virtual scroll truncation.
+- **Suppression of Print Distortions**:
+  - Hid horizontal and vertical scrollbars, left/right horizontal spacers, column resize handles, filter menus, and scroll sizers (`display: none !important;`).
+- **Flexible Row & Header Flow**:
+  - Converted absolute transforms on `.ag-header-row` and `.ag-row` into fluid flexbox rows (`display: flex !important; flex-direction: row !important; transform: none !important; min-height: 32pt !important;`) with `page-break-inside: avoid !important;`.
+- **Text Wrapping & Page Edge Containment**:
+  - Applied `white-space: normal !important; overflow-wrap: break-word !important; word-break: break-word !important; word-wrap: break-word !important; text-overflow: clip !important; hyphens: auto !important;` to `.ag-cell`, `.ag-cell-value`, header cells, and nested inner `div`/`p`/`span` elements.
+- **Proportional Column Width Balancing**:
+  - Configured print-calibrated width ratios:
+    - **Assurance Criterion (`Criterion`)**: `flex: 5 1 45% !important; width: 45% !important; max-width: 45% !important;` with left text alignment for in-depth question and finding narratives.
+    - **Category (`Category`)**: `flex: 1.5 1 15% !important; width: 15% !important; max-width: 15% !important;` centered.
+    - **Status (`Status`)**: `flex: 1.2 1 12% !important; width: 12% !important; max-width: 12% !important;` centered.
+    - **Document Sources (`Sources`)**: `flex: 2.8 1 28% !important; width: 28% !important; max-width: 28% !important;` with word-break and inline citation chip wrapping.
+
+---
+
+## [2.23.0] - 2026-09-27
+
+### Summary
+Added a comprehensive CSS print media query (`@media print`) in `frontend/public/styles/index.css` to format project evaluation logs, review findings, criteria audit lists, and transition timelines cleanly when printed or exported to PDF.
+
+---
+
+### Added & Enhanced
+
+#### 1. CSS Print Media Query (`frontend/public/styles/index.css`)
+- **Page Geometry & Base Layout**:
+  - Configured `@page` for A4 portrait with consistent 14mm/12mm/16mm/12mm margins.
+  - Enforced `-webkit-print-color-adjust: exact` and `print-color-adjust: exact` so audit badges, risk status colors, and borders retain fidelity in print preview.
+  - Reset body and `.App` backgrounds to clean white (`#ffffff`) and deep slate typography (`#0f172a`), eliminating ink-heavy backgrounds.
+- **Chrome & Interactive Element Suppression**:
+  - Automatically hides navigation headers (`.App-header`), search inputs, interactive toolbars, sticky offline banners, floating drawers, modal backdrops, pagination/stepper arrows, and action buttons (`Export CSV`, `Reset Filters`).
+- **Unrestricted Viewport for Ag-Grid & Evaluation Logs**:
+  - Overrides fixed-height scrolling containers (`height: auto !important; max-height: none !important; overflow: visible !important; position: static !important;`) across `.ag-theme-alpine`, `.ag-root-wrapper`, `.ag-body-viewport`, and audit feed drawers so evaluation rows print in their entirety without clipping.
+  - Added `page-break-inside: avoid; break-inside: avoid;` to evaluation cards, log entries, table rows, and findings cards to avoid orphan splits across pages.
+  - Enforced `display: table-header-group` on table headers to repeat column definitions cleanly across multi-page printouts.
+- **Evaluation Evidence & Badging Styling**:
+  - Formatted evidence quotations, citations, and justifications with distinct left borders (`#1d70b8`) and monospace font rendering.
+  - Applied subtle borders to status badges (`Positive`, `Negative`, `Neutral`) for maximum legibility in black-and-white or color printing.
+- **Audit Footer Watermark**:
+  - Added official sensitivity assurance footer note on printed evaluation dossiers.
+
+---
+
 ## [2.22.0] - 2026-09-27
 
 ### Summary
