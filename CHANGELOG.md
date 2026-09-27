@@ -6,6 +6,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.20.0] - 2026-09-27
+
+### Summary
+Implemented a real-time browser connectivity monitoring system and visual status indicator (`components/ConnectivityStatus.tsx`), featuring an executive header status badge with detailed network diagnostic popover, a persistent sticky offline notification banner informing users of local caching safeguards, and an automated reconnection banner when Cloud Firestore synchronization resumes.
+
+---
+
+### Added & Enhanced
+
+#### 1. Connectivity Monitoring System (`frontend/components/ConnectivityStatus.tsx`)
+- **Reactive State Management (`ConnectivityProvider`, `useConnectivity`)**:
+  - Automatically binds to browser `online` and `offline` window events, synchronized with `navigator.onLine`.
+  - Verifies round-trip network integrity via proactive health check pings against `/api/health` with automated abort timeout handling.
+  - Integrates with `logger.warn` and `logger.info` under the `network` telemetry category for auditing disconnect and reconnect milestones.
+- **Executive Header Status Pill (`ConnectivityHeaderBadge`)**:
+  - Displays real-time connectivity status pill in the persistent navigation bar:
+    - **Online**: Soft emerald pulse dot (`#10b981`), indicating live WebSocket connection to Cloud Firestore (`ai-studio-scout-d32152a8-4a4e-4ea6-84c3-214b5ae51fa5`).
+    - **Offline**: Amber/crimson warning pulse dot (`#ef4444`), indicating disconnected network with local cache fallback active.
+  - Interactive popover card displaying Database Ledger name, active Sync Mode (Real-time WebSocket vs. Local IndexedDB Cache), last verification timestamp, and a manual "Test Network" diagnostic action.
+- **Sticky Viewport Notice Banner (`OfflineNoticeBanner`)**:
+  - **Active Offline Mode**: Fixed sticky crimson banner pinned directly beneath the navigation header with warning icon, detailing that cached assurance criteria and review findings remain operational and queued modifications will synchronize upon reconnection.
+  - **Reconnected Mode**: Temporary celebratory emerald banner confirming Cloud Firestore database re-synchronization with 4.5-second auto-dismissal.
+
+#### 2. Root Layout Integration (`frontend/pages/_app.tsx`)
+- Wrapped global layout with `<ConnectivityProvider>`.
+- Positioned `<ConnectivityHeaderBadge />` in the top header action cluster alongside the Gate 2 Auditor session pill.
+- Positioned `<OfflineNoticeBanner />` directly beneath the fixed navigation header.
+
+---
+
 ## [2.19.0] - 2026-09-27
 
 ### Summary
