@@ -6,6 +6,40 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.21.0] - 2026-09-27
+
+### Summary
+Engineered an enterprise client-side search bar and multi-attribute filter system (`components/EvaluationSearchBar.tsx`) to rapidly filter project evaluation items, review findings, and audit evidence. Features real-time multi-field text querying, category and risk-status faceted filtering, match counter badges, keyboard navigation shortcuts (`/`, `Cmd+K`, `Esc`), and step-through navigation controls integrated into the AgGrid dataset and inspection modal.
+
+---
+
+### Added & Enhanced
+
+#### 1. Client-Side Evaluation Search Bar (`frontend/components/EvaluationSearchBar.tsx`)
+- **Multi-Field Instant Search**:
+  - Dynamically searches across question text, assurance criteria, category, risk status (`Positive`, `Negative`, `Neutral`), justification analysis, and document file citations.
+- **Faceted Status & Category Filters**:
+  - Direct status pills for all findings, negative / high-risk items, positive / validated criteria, and neutral findings with custom color accents.
+  - Category dropdown automatically populated from available dataset attributes (e.g. Commercial, Management, Strategic).
+- **Match Tracking & Counters**:
+  - Displays instant match counter: `Showing X of Y items` with a `Filtered` status chip.
+  - One-click `Reset Filters` control when filters or queries are active.
+- **Quick Navigation & Stepper**:
+  - Previous (`<`) and Next (`>`) stepper controls to cycle directly between matching evaluation items.
+  - Active item position counter (`Index X / Total`).
+- **Keyboard Shortcuts**:
+  - Focus search input with `/` or `Cmd+K` / `Ctrl+K`.
+  - Clear search query or unfocus with `Esc`.
+
+#### 2. Review Findings & Criteria Integration (`frontend/pages/results.tsx`)
+- Integrated `EvaluationSearchBar` between the metric header and AgGrid table.
+- Connected search state to global `useSearch()` context, synchronizing with the top header navigation search bar.
+- Updated `AgGridReact` to bind to `filteredResults`.
+- Implemented a clean empty state with a "Clear All Filters" button when no items match the query.
+- Enhanced the detailed findings inspection modal with top-bar quick navigation arrows to step through filtered items without closing the modal.
+
+---
+
 ## [2.20.0] - 2026-09-27
 
 ### Summary

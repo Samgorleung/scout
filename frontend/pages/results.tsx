@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -14,11 +14,15 @@ import {
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
   Help as HelpIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  ArrowBackIosNew as PrevIcon,
+  ArrowForwardIos as NextIcon
 } from '@mui/icons-material';
 
 import { fetchItems, fetchRelatedItems, rateResponse } from '@/utils/api';
 import { ResultsSkeleton } from '@/components/LoadingSystem';
+import { useSearch } from '@/context/SearchContext';
+import { EvaluationSearchBar } from '@/components/EvaluationSearchBar';
 
 interface Rating {
   id: string;
@@ -113,6 +117,89 @@ const ResultsTable: React.FC = () => {
   const [thumbsDownColour, setThumbsDownColour] = useState({ color: '#94a3b8' });
   const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
+
+  // Client-side search and filtering states
+  const { globalSearchQuery, setGlobalSearchQuery, setSearchMatchCount } = useSearch();
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    results.forEach((r) => {
+      if (r.Category) set.add(r.Category);
+    });
+    return Array.from(set).sort();
+  }, [results]);
+
+  const filteredResults = useMemo(() => {
+    return results.filter((item) => {
+      if (statusFilter !== 'ALL' && item.Status !== statusFilter) {
+        return false;
+      }
+      if (categoryFilter !== 'ALL' && item.Category !== categoryFilter) {
+        return false;
+      }
+      if (globalSearchQuery.trim()) {
+        const q = globalSearchQuery.toLowerCase().trim();
+        const question = item.Criterion?.question?.toLowerCase() || '';
+        const category = item.Category?.toLowerCase() || '';
+        const status = item.Status?.toLowerCase() || '';
+        const evidence = item.Evidence?.toLowerCase() || '';
+        const justification = item.Justification?.toLowerCase() || '';
+        const gate = item.Gate?.toLowerCase() || '';
+        const sources = (item.Sources || []).map((s) => s.fileName?.toLowerCase() || '').join(' ');
+
+        return (
+          question.includes(q) ||
+          category.includes(q) ||
+          status.includes(q) ||
+          evidence.includes(q) ||
+          justification.includes(q) ||
+          gate.includes(q) ||
+          sources.includes(q)
+        );
+      }
+      return true;
+    });
+  }, [results, globalSearchQuery, statusFilter, categoryFilter]);
+
+  // Synchronize match count with global search context
+  useEffect(() => {
+    if (globalSearchQuery.trim() || statusFilter !== 'ALL' || categoryFilter !== 'ALL') {
+      setSearchMatchCount(filteredResults.length);
+    } else {
+      setSearchMatchCount(null);
+    }
+  }, [globalSearchQuery, statusFilter, categoryFilter, filteredResults.length, setSearchMatchCount]);
+
+  const currentSelectedIndex = useMemo(() => {
+    if (!selectedRow) return -1;
+    return filteredResults.findIndex((r) => r.id === selectedRow.id);
+  }, [selectedRow, filteredResults]);
+
+  const handleQuickNavigateNext = () => {
+    if (filteredResults.length === 0) return;
+    const nextIdx =
+      currentSelectedIndex >= 0 && currentSelectedIndex < filteredResults.length - 1
+        ? currentSelectedIndex + 1
+        : 0;
+    setSelectedRow(filteredResults[nextIdx]);
+    setOpen(true);
+  };
+
+  const handleQuickNavigatePrev = () => {
+    if (filteredResults.length === 0) return;
+    const prevIdx =
+      currentSelectedIndex > 0 ? currentSelectedIndex - 1 : filteredResults.length - 1;
+    setSelectedRow(filteredResults[prevIdx]);
+    setOpen(true);
+  };
+
+  const handleClearFilters = () => {
+    setGlobalSearchQuery('');
+    setStatusFilter('ALL');
+    setCategoryFilter('ALL');
+  };
 
   useEffect(() => {
     setIsMounted(true);
@@ -466,47 +553,145 @@ const ResultsTable: React.FC = () => {
           </div>
         </div>
 
-        {/* High Density AgGrid Surface */}
-        <div style={{
-          backgroundColor: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: '12px',
-          padding: '4px',
-          boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
-          marginBottom: '40px'
-        }}>
-          <div className="ag-theme-alpine" style={{ height: '620px', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
-            <AgGridReact
-              rowData={results}
-              columnDefs={columnDefs}
-              defaultColDef={{
-                wrapText: true,
-                autoHeight: true,
-                sortable: true,
-                filter: true,
+        {/* Client-Side Evaluation Search & Filter Bar */}
+        <EvaluationSearchBar
+          searchQuery={globalSearchQuery}
+          onSearchChange={setGlobalSearchQuery}
+          totalCount={results.length}
+          filteredCount={filteredResults.length}
+          placeholder="Filter evaluation items by question, category, status, justification, or cited docs..."
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          categoryFilter={categoryFilter}
+          categories={availableCategories}
+          onCategoryFilterChange={setCategoryFilter}
+          onClearFilters={handleClearFilters}
+          onQuickNavigateNext={handleQuickNavigateNext}
+          onQuickNavigatePrev={handleQuickNavigatePrev}
+          currentIndex={currentSelectedIndex >= 0 ? currentSelectedIndex : undefined}
+        />
+
+        {/* Evaluation Items Grid or Empty Filter State */}
+        {filteredResults.length === 0 ? (
+          <div
+            style={{
+              backgroundColor: '#ffffff',
+              border: '1px dashed #cbd5e1',
+              borderRadius: '12px',
+              padding: '60px 24px',
+              textAlign: 'center',
+              marginBottom: '40px'
+            }}
+          >
+            <div style={{ fontSize: '2rem', marginBottom: '12px' }}>🔍</div>
+            <h3 style={{ fontSize: '1.125rem', fontWeight: 700, color: '#0f172a', margin: '0 0 8px 0' }}>
+              No matching evaluation items
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: '#64748b', margin: '0 auto 20px auto', maxWidth: '480px' }}>
+              No review findings match your search query &quot;{globalSearchQuery}&quot; and active filters. Try broadening your terms or reset all filters to restore the complete list.
+            </p>
+            <button
+              type="button"
+              onClick={handleClearFilters}
+              style={{
+                padding: '8px 20px',
+                backgroundColor: '#1d70b8',
+                color: '#ffffff',
+                fontWeight: 600,
+                fontSize: '0.875rem',
+                borderRadius: '6px',
+                border: 'none',
+                cursor: 'pointer'
               }}
-              rowHeight={56}
-              onRowClicked={onRowClicked}
-            />
+            >
+              Clear All Filters
+            </button>
           </div>
-        </div>
+        ) : (
+          <div style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '4px',
+            boxShadow: '0 1px 3px 0 rgba(15, 23, 42, 0.04)',
+            marginBottom: '40px'
+          }}>
+            <div className="ag-theme-alpine" style={{ height: '620px', width: '100%', borderRadius: '8px', overflow: 'hidden' }}>
+              <AgGridReact
+                rowData={filteredResults}
+                columnDefs={columnDefs}
+                defaultColDef={{
+                  wrapText: true,
+                  autoHeight: true,
+                  sortable: true,
+                  filter: true,
+                }}
+                rowHeight={56}
+                onRowClicked={onRowClicked}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Detailed Findings Inspection Modal */}
         <Modal open={open} onClose={handleClose}>
           <Box sx={modalStyle}>
-            <IconButton
-              aria-label="close"
-              onClick={handleClose}
-              sx={{
-                position: 'absolute',
-                right: 12,
-                top: 12,
-                color: '#64748b',
-                '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' },
-              }}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
+            {/* Modal Header Actions: Quick Navigation & Close */}
+            <div style={{ position: 'absolute', right: 12, top: 12, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              {filteredResults.length > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', marginRight: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleQuickNavigatePrev}
+                    aria-label="Previous item"
+                    title="Previous matching item"
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      color: '#475569'
+                    }}
+                  >
+                    <PrevIcon style={{ fontSize: '0.8rem' }} />
+                  </button>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', padding: '0 6px' }}>
+                    {currentSelectedIndex >= 0 ? `${currentSelectedIndex + 1} / ${filteredResults.length}` : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleQuickNavigateNext}
+                    aria-label="Next item"
+                    title="Next matching item"
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '4px',
+                      padding: '4px 6px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      color: '#475569'
+                    }}
+                  >
+                    <NextIcon style={{ fontSize: '0.8rem' }} />
+                  </button>
+                </div>
+              )}
+              <IconButton
+                aria-label="close"
+                onClick={handleClose}
+                sx={{
+                  color: '#64748b',
+                  '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' },
+                }}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </div>
 
             {selectedRow && (
               <div>
