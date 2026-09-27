@@ -6,6 +6,108 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.19.0] - 2026-09-27
+
+### Summary
+Engineered an enterprise global loading spinner and skeleton screen design system (`components/LoadingSystem.tsx`), featuring a global ambient provider (`GlobalLoadingProvider` and `useGlobalLoading`), source-aware visual states tailored for Gemini AI reasoning and Firebase Cloud Firestore live synchronization, and domain-specific skeleton screens (`ResultsSkeleton`, `TrackerSkeleton`, `CardSkeleton`, `TableSkeleton`, `AiEvaluationSkeleton`).
+
+---
+
+### Added & Enhanced
+
+#### 1. Global Loading & Skeleton System (`frontend/components/LoadingSystem.tsx`)
+- **Global Ambient Provider (`GlobalLoadingProvider`, `useGlobalLoading`)**:
+  - Global reactive context providing `startLoading({ message, source, subtext })` and `stopLoading()` across all pages.
+  - Source-aware visual design:
+    - **Gemini AI Mode (`source: 'gemini'`)**: Violet/fuchsia gradient ring with glowing spark (`✦`) emblem, animated status pill, and automated step progress text.
+    - **Firebase Firestore Mode (`source: 'firebase'`)**: Amber/orange sync ring with database lightning badge (`⚡`), communicating live ledger hydration.
+    - **Gateway Assurance Mode (`source: 'general'`)**: Deep GovUK navy/blue corporate spinner.
+- **Standalone SVG Spinner (`GlobalLoadingSpinner`)**:
+  - Scalable dual-track vector SVG with customizable sizes (`sm`, `md`, `lg`, `xl` or custom numeric pixel diameter) and variants (`primary`, `gemini`, `firebase`, `neutral`).
+- **Domain-Specific Skeleton Screens**:
+  - `ResultsSkeleton`: Full criteria overview, KPI pills, and review findings card list skeleton matching `pages/results.tsx`.
+  - `TrackerSkeleton`: Multi-gate filter bar, search input, and structured requirement rows skeleton matching `components/ComplianceTracker.tsx`.
+  - `CardSkeleton`: Analytics KPI cards skeleton for dashboard metrics.
+  - `TableSkeleton`: Configurable row/column table skeleton.
+  - `AiEvaluationSkeleton`: Shimmering placeholder with Gemini intelligence badge for real-time compliance assessments.
+- **CSS Shimmer & Keyframes (`styles/index.css`)**:
+  - Added high-performance `@keyframes shimmerWave`, `@keyframes spinSmooth`, and `@keyframes pulseGlow` with hardware-accelerated gradient offsets.
+
+#### 2. Application Integrations
+- **Application Root (`pages/_app.tsx`)**:
+  - Wrapped global layout with `<GlobalLoadingProvider>` inside `<SearchProvider>`.
+- **Review Findings Page (`pages/results.tsx`)**:
+  - Replaced legacy GIF loader with `ResultsSkeleton` during data fetching.
+- **Compliance Requirements Tracker (`components/ComplianceTracker.tsx`)**:
+  - Replaced generic loading text with `TrackerSkeleton` during Cloud Firestore collection subscription.
+- **Corporate Entity Evaluation (`pages/index.tsx`)**:
+  - Integrated `AiEvaluationSkeleton` inside `ComplianceOfficerWidget` during live Gemini AI evaluation calls.
+
+---
+
+## [2.18.0] - 2026-09-27
+
+### Summary
+Built a high-performance client-side logging and telemetry utility (`utils/logger.ts`) for tracking application events, navigation transitions, and error diagnostics in development and preview environments. Features strict recursive payload sanitization and credential masking (API keys, JWTs, Bearer tokens, private keys, passwords, and PII), rolling in-memory telemetry buffering, and seamless integration with `ErrorBoundary.tsx` and Next.js navigation lifecycles.
+
+---
+
+### Added & Enhanced
+
+#### 1. Client-Side Logging & Telemetry Utility (`frontend/utils/logger.ts`)
+- **Structured Severity Levels**: Supports `DEBUG`, `INFO`, `WARN`, `ERROR`, and `EVENT` with dynamic threshold filtering (`setLevel`).
+- **Data Sanitization & Credential Masking Engine (`sanitizePayload`)**:
+  - Automatically scrubs sensitive property keys matching `/password|secret|token|apikey|auth|bearer|credentials|cookie|cvv|ssn/i`.
+  - Pattern matches and redacts Google API keys (`AIzaSy...`), OpenAI keys (`sk-...`), Bearer authorization headers, JSON Web Tokens (JWT), and multi-line private keys.
+  - Partially masks email addresses (e.g. `j***@cabinetoffice.gov.uk`) to preserve diagnostic domain context without leaking personal identifiability.
+  - Features circular reference protection (`WeakSet`) and recursion depth clamping.
+- **Rolling In-Memory Telemetry Buffer**:
+  - Maintains a circular buffer of the most recent 100 application events and anomalies.
+  - Provides `getTelemetryBuffer(limit)` and `exportTelemetryJson(limit)` for generating sanitized diagnostics on demand.
+- **Visual Console Formatter**: Styled, color-coded browser console log entries with categorized badges (`[IPA Scout • LEVEL • category]`).
+
+#### 2. Telemetry Integrations Across Components
+- **Error Boundary Telemetry (`components/ErrorBoundary.tsx`)**:
+  - Integrated `logger.error` within `componentDidCatch` to track runtime failures under the `ui-guard` category.
+  - Embedded sanitized telemetry breadcrumbs into the "Copy Diagnostics" clipboard report.
+  - Logged state recovery events on `resetErrorBoundary`.
+- **Navigation Lifecycle Tracking (`pages/_app.tsx`)**:
+  - Recorded application mount events and subscribed to Next.js `routeChangeComplete` to log `page_view` telemetry under the `navigation` category.
+
+---
+
+## [2.17.0] - 2026-09-27
+
+### Summary
+Engineered an enterprise-grade React Error Boundary component (`ErrorBoundary.tsx`) providing fault isolation, graceful fallback UI, one-click recovery, telemetry diagnostics, and automatic route-change resetting. Integrated the component into the application viewport (`_app.tsx`), portfolio analytics charts, real-time activity feed, transition timeline, and document PDF canvas viewer.
+
+---
+
+### Added & Enhanced
+
+#### 1. React Error Boundary Component (`frontend/components/ErrorBoundary.tsx`)
+- **Fault-Tolerant Error Handling**:
+  - Implemented standard React lifecycle boundaries (`componentDidCatch`, `static getDerivedStateFromError`) with strong TypeScript typing (`ErrorBoundaryProps`, `ErrorBoundaryState`, `FallbackProps`).
+  - Supports automatic boundary resets when dependency keys change via `resetKeys` (e.g. Next.js router route transitions).
+  - Supports custom fallback components or render-prop functions `(props: FallbackProps) => ReactNode`.
+  - Exposes `withErrorBoundary` Higher-Order Component (HOC) for declarative wrapping of complex components.
+- **Graceful Fallback UI**:
+  - **Executive Page-Level View**: Reassuring status banner, clear component attribution, explanation that Firestore data remains secure, "Recover Component State" button, "Reload Application" button, and "Return to Overview" link.
+  - **Inline Isolated Widget Mode (`isolate={true}`)**: Compact card fallback tailored for embedded dashboard widgets, charts, and activity feeds.
+  - **Diagnostics & Telemetry**: One-click "Copy Diagnostics" with clipboard integration and collapsible formatted stack trace / component tree view.
+
+#### 2. Application & Viewport Integration
+- **Root Page Protection (`pages/_app.tsx`)**:
+  - Wrapped Next.js `<Component {...pageProps} />` with `<ErrorBoundary componentName="Application Viewport" resetKeys={[router.asPath]}>`, ensuring unhandled page errors show graceful fallback instead of crashing the app.
+- **Portfolio Analytics Protection (`components/PortfolioDashboard.tsx`)**:
+  - Wrapped Recharts `ComplianceStatusPieChart` and D3 `ReviewStatusDistributionChart` in isolated error boundary mode.
+- **Assurance Tracker & Live Feed Protection (`components/ComplianceTracker.tsx`)**:
+  - Wrapped `GlobalActivityFeed` and `ComplianceTransitionTimeline` with isolated error boundaries.
+- **Document Dossier Protection (`pages/file-viewer.tsx`)**:
+  - Wrapped `PdfCanvasViewer` in an isolated error boundary to safeguard document viewing sessions.
+
+---
+
 ## [2.16.1] - 2026-09-25
 
 ### Summary

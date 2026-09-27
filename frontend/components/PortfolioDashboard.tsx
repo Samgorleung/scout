@@ -39,6 +39,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ReviewStatusDistributionChart from './ReviewStatusDistributionChart';
 import ComplianceStatusPieChart from './ComplianceStatusPieChart';
+import { ErrorBoundary } from './ErrorBoundary';
 import { exportPortfolioCompliancePdf, exportComplianceAuditPdf } from '@/utils/exportCompliancePdf';
 
 export default function PortfolioDashboard() {
@@ -802,27 +803,29 @@ export default function PortfolioDashboard() {
         </div>
       </div>
 
-      {/* Render Recharts Compliance Status Pie Chart */}
-      {(dashboardChartTab === 'compliance_pie' || dashboardChartTab === 'both') && (
-        <ComplianceStatusPieChart
-          projects={projects}
-          selectedStatus={selectedStatus}
-          onSelectStatus={setSelectedStatus}
-          title="Portfolio Compliance Requirements Status (Recharts)"
-          subtitle="Real-time status breakdown across all portfolio compliance criteria (Compliant, Non-compliant, In Progress) for project stakeholders."
-          showSummaryCards={true}
-          showFilterButtons={true}
-        />
-      )}
+      {/* Render Recharts Compliance Status Pie Chart & D3 Review Distribution with Fault Isolation */}
+      <ErrorBoundary isolate componentName="Portfolio Analytics Charts" resetKeys={[dashboardChartTab, selectedStatus]}>
+        {(dashboardChartTab === 'compliance_pie' || dashboardChartTab === 'both') && (
+          <ComplianceStatusPieChart
+            projects={projects}
+            selectedStatus={selectedStatus}
+            onSelectStatus={setSelectedStatus}
+            title="Portfolio Compliance Requirements Status (Recharts)"
+            subtitle="Real-time status breakdown across all portfolio compliance criteria (Compliant, Non-compliant, In Progress) for project stakeholders."
+            showSummaryCards={true}
+            showFilterButtons={true}
+          />
+        )}
 
-      {/* Render D3.js Review Status Distribution Chart */}
-      {(dashboardChartTab === 'review_bars' || dashboardChartTab === 'both') && (
-        <ReviewStatusDistributionChart
-          projects={projects}
-          selectedStatus={selectedStatus}
-          onSelectStatus={setSelectedStatus}
-        />
-      )}
+        {/* Render D3.js Review Status Distribution Chart */}
+        {(dashboardChartTab === 'review_bars' || dashboardChartTab === 'both') && (
+          <ReviewStatusDistributionChart
+            projects={projects}
+            selectedStatus={selectedStatus}
+            onSelectStatus={setSelectedStatus}
+          />
+        )}
+      </ErrorBoundary>
 
       {/* 4. Main Dashboard Layout (Grid with Left Project Reviews and Right Deadlines/Activity) */}
       <div style={{

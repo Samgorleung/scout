@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { exportComplianceAuditPdf } from '../utils/exportCompliancePdf';
 import { initialComplianceRequirements } from '../lib/seedData';
+import { AiEvaluationSkeleton } from '../components/LoadingSystem';
 
 interface Result {
   answer: string;
@@ -755,6 +756,14 @@ const ComplianceOfficerWidget: React.FC<{ projectName?: string; reviewType?: str
           fontSize: '0.875rem'
         }}>
           <strong>Verification Notice:</strong> {error}
+        </div>
+      )}
+
+      {loading && (
+        <div style={{ marginTop: '20px' }}>
+          <AiEvaluationSkeleton
+            prompt={`Gemini AI evaluating UK entity #${companyNumber} against HM Treasury Gateway compliance & standing criteria...`}
+          />
         </div>
       )}
 

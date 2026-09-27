@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { fetchItems, fetchReadItemsByAttribute, fetchFile, uploadFile } from '@/utils/api';
 import { useRouter } from 'next/router';
 import { PdfCanvasViewer } from '@/components/PdfCanvasViewer';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 interface File {
     name: string | null;
@@ -283,10 +284,12 @@ const FileViewer: React.FC = () => {
                                     Download Document
                                 </button>
                             </div>
-                            <PdfCanvasViewer
-                                url={selectedFile.dataUrl}
-                                initialPage={pageNumber || 1}
-                            />
+                            <ErrorBoundary isolate componentName="PDF Canvas Viewer" resetKeys={[selectedFile.dataUrl]}>
+                                <PdfCanvasViewer
+                                    url={selectedFile.dataUrl}
+                                    initialPage={pageNumber || 1}
+                                />
+                            </ErrorBoundary>
                         </div>
                     ) : (
                         <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '32px', textAlign: 'center' }}>

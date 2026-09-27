@@ -81,6 +81,8 @@ import {
 import { ComplianceTransitionTimeline } from './ComplianceTransitionTimeline';
 import { ComplianceItemComments } from './ComplianceItemComments';
 import { GlobalActivityFeed } from './GlobalActivityFeed';
+import { ErrorBoundary } from './ErrorBoundary';
+import { TrackerSkeleton } from './LoadingSystem';
 import { useSearch } from '@/context/SearchContext';
 
 interface ComplianceTrackerProps {
@@ -3001,36 +3003,40 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
       </div>
 
       {activeView === 'activity' ? (
-        <GlobalActivityFeed
-          projectName={projectName}
-          currentGate={selectedGate === 'ALL' ? currentGate : selectedGate}
-          currentUser={{
-            name: currentUser.name,
-            role: currentUser.role,
-            email: currentUser.email
-          }}
-          onNavigateToItem={(itemId, itemCode) => {
-            setActiveView('checklist');
-            if (itemCode) setSearchQuery(itemCode);
-            setExpandedIds(prev => ({ ...prev, [itemId]: true }));
-          }}
-          mode="embedded"
-        />
+        <ErrorBoundary isolate componentName="Live Activity Feed" resetKeys={[projectName, selectedGate]}>
+          <GlobalActivityFeed
+            projectName={projectName}
+            currentGate={selectedGate === 'ALL' ? currentGate : selectedGate}
+            currentUser={{
+              name: currentUser.name,
+              role: currentUser.role,
+              email: currentUser.email
+            }}
+            onNavigateToItem={(itemId, itemCode) => {
+              setActiveView('checklist');
+              if (itemCode) setSearchQuery(itemCode);
+              setExpandedIds(prev => ({ ...prev, [itemId]: true }));
+            }}
+            mode="embedded"
+          />
+        </ErrorBoundary>
       ) : activeView === 'timeline' ? (
-        <ComplianceTransitionTimeline
-          selectedItem={selectedTimelineItem}
-          allItems={requirements}
-          onSelectItem={setSelectedTimelineItem}
-          onStatusTransition={async (item, newStatus, notes, trigger, docRef) => {
-            await handleChangeStatus(item, newStatus, notes, trigger, docRef);
-          }}
-          currentUser={{
-            name: currentUser.name,
-            role: currentUser.role,
-            email: currentUser.email
-          }}
-          mode="embedded"
-        />
+        <ErrorBoundary isolate componentName="Transition Timeline" resetKeys={[selectedTimelineItem?.id]}>
+          <ComplianceTransitionTimeline
+            selectedItem={selectedTimelineItem}
+            allItems={requirements}
+            onSelectItem={setSelectedTimelineItem}
+            onStatusTransition={async (item, newStatus, notes, trigger, docRef) => {
+              await handleChangeStatus(item, newStatus, notes, trigger, docRef);
+            }}
+            currentUser={{
+              name: currentUser.name,
+              role: currentUser.role,
+              email: currentUser.email
+            }}
+            mode="embedded"
+          />
+        </ErrorBoundary>
       ) : (
         <>
           {/* Advanced Search Bar & Multi-Criteria Controls */}
@@ -4327,10 +4333,7 @@ export const ComplianceTracker: React.FC<ComplianceTrackerProps> = ({
 
       {/* Requirement List */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-          <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>⏳</div>
-          Subscribing to Cloud Firestore collection <code>compliance_requirements</code>...
-        </div>
+        <TrackerSkeleton />
       ) : error && requirements.length === 0 ? (
         <div style={{ padding: '16px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#991b1b', marginBottom: '16px' }}>
           <strong>Error loading requirements:</strong> {error}

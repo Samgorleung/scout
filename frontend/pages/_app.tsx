@@ -1,16 +1,32 @@
 import type { AppProps } from 'next/app';
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { SearchProvider } from '@/context/SearchContext';
+import { GlobalLoadingProvider } from '@/components/LoadingSystem';
 import { GlobalHeaderSearch } from '@/components/GlobalHeaderSearch';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { logger } from '@/utils/logger';
 import '../public/styles/index.css';
 import '../public/styles/App.css';
 import '../public/styles/FileViewer.css';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
+
+  useEffect(() => {
+    logger.info('IPA Scout application mounted', { path: router.asPath }, 'lifecycle');
+
+    const handleRouteChange = (url: string) => {
+      logger.trackEvent('page_view', { path: url }, 'navigation');
+    };
+
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router]);
 
   const isActive = (pathname: string) => {
     if (pathname === '/') {
@@ -21,16 +37,17 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   return (
     <SearchProvider>
-      <Head>
-        <title>IPA Scout | Project Assurance & Compliance Intelligence</title>
-        <meta
-          name="description"
-          content="Enterprise assurance and compliance intelligence platform for UK major infrastructure projects and HM Treasury Gateway Reviews."
-        />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
+      <GlobalLoadingProvider>
+        <Head>
+          <title>IPA Scout | Project Assurance & Compliance Intelligence</title>
+          <meta
+            name="description"
+            content="Enterprise assurance and compliance intelligence platform for UK major infrastructure projects and HM Treasury Gateway Reviews."
+          />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </Head>
 
-      <div className="App">
+        <div className="App">
         {/* Modern Executive Top Navigation Bar */}
         <header className="App-header">
           <div className="header-content">
@@ -110,7 +127,12 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
         {/* Main Content Viewport */}
         <main className="main-content">
-          <Component {...pageProps} />
+          <ErrorBoundary
+            componentName="Application Viewport"
+            resetKeys={[router.asPath]}
+          >
+            <Component {...pageProps} />
+          </ErrorBoundary>
         </main>
 
         {/* Modern Corporate Footer */}
@@ -139,6 +161,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
           </div>
         </footer>
       </div>
+      </GlobalLoadingProvider>
     </SearchProvider>
   );
 }

@@ -1,30 +1,66 @@
 import React from 'react';
+import {
+  GlobalLoadingSpinner,
+  GlobalLoadingProvider,
+  useGlobalLoading,
+  Skeleton,
+  CardSkeleton,
+  ResultsSkeleton,
+  TrackerSkeleton,
+  AiEvaluationSkeleton,
+  LoadingSource,
+  LoadingOptions
+} from './LoadingSystem';
 
-// Import the GIF directly in the component
-import loadingGif from '@/public/assets/magnifying-glass.gif';
-import Image from 'next/image';
-interface MagnifyingGlassLoaderProps {
+export interface MagnifyingGlassLoaderProps {
   size?: number;
+  label?: string;
+  subtext?: string;
+  source?: LoadingSource;
 }
 
-const MagnifyingGlassLoader: React.FC<MagnifyingGlassLoaderProps> = ({ size = 80 }) => {
+/**
+ * Modernized Executive Loader conforming to the IPA Scout assurance design system.
+ */
+export const MagnifyingGlassLoader: React.FC<MagnifyingGlassLoaderProps> = ({
+  size = 54,
+  label = 'Loading Assurance Data...',
+  subtext = 'Connecting to project assurance records...',
+  source = 'primary' as any
+}) => {
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      height: '100%',
-      width: '100%'
-    }}>
-      <Image
-        src={loadingGif}
-        alt="Loading..."
-        width={size}
-        height={size}
-        style={{ objectFit: 'contain' }}
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '260px',
+        width: '100%',
+        padding: '32px 16px'
+      }}
+    >
+      <GlobalLoadingSpinner
+        size={size}
+        variant={source === 'gemini' ? 'gemini' : source === 'firebase' ? 'firebase' : 'primary'}
+        label={label}
+        subtext={subtext}
       />
     </div>
   );
 };
+
+export {
+  GlobalLoadingSpinner,
+  GlobalLoadingProvider,
+  useGlobalLoading,
+  Skeleton,
+  CardSkeleton,
+  ResultsSkeleton,
+  TrackerSkeleton,
+  AiEvaluationSkeleton
+};
+
+export type { LoadingSource, LoadingOptions };
 
 export default MagnifyingGlassLoader;

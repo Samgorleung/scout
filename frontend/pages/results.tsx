@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 
 import { fetchItems, fetchRelatedItems, rateResponse } from '@/utils/api';
-import MagnifyingGlassLoader from '../components/Loader';
+import { ResultsSkeleton } from '@/components/LoadingSystem';
 
 interface Rating {
   id: string;
@@ -368,7 +368,7 @@ const ResultsTable: React.FC = () => {
   const neutralCount = results.filter((r) => r.Status === 'Neutral').length;
 
   if (!isMounted || isLoading) {
-    return <MagnifyingGlassLoader />;
+    return <ResultsSkeleton />;
   }
 
   return (
