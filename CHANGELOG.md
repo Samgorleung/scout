@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.38.0] - 2026-09-29
+
+### Summary
+Implemented comprehensive User Guide, Assurance Playbook, and Onboarding System following user approval of Option 1:
+1. **Interactive Global User Guide & Playbook Modal (`UserGuideModal.tsx`)**:
+   - Built a 5-tab interactive walkthrough accessible from any page:
+     - **Tab 1 (4-Step Assurance Workflow)**: Step-by-step flowchart connecting Ingest Evidence (`/file-viewer`) → Review Findings (`/results`) → Project Assurance (`/project-dashboard`) → Portfolio Governance (`/`).
+     - **Tab 2 (The 4 Core Pillars)**: Deep dive into the four main modules with direct deep-links.
+     - **Tab 3 (HM Treasury Green Book & Gateways Primer)**: Explanation of the 5-Case Model dimensions, 80% passing threshold, and Gateway Delivery Confidence Ratings (Green to Red).
+     - **Tab 4 (Official Gateway Assurance Pack)**: Step-by-step guidance on exporting publication-grade PDF dossiers and sign-off procedures.
+     - **Tab 5 (Pro Tips & Shortcuts)**: Search shortcuts, citation jumping, and real-time Firestore sync.
+2. **Persistent Global Header & Footer Entry Points (`_app.tsx`)**:
+   - Added an **"Assurance Guide"** pill with `HelpIcon` in the persistent executive header.
+   - Added **"User Guide & Playbook"** action in the corporate footer.
+   - Global event listener (`'open-user-guide'`) allowing any button or widget in the application to trigger the guide modal.
+3. **First-Time User Onboarding Banner (`PortfolioDashboard.tsx`)**:
+   - Added a dismissible welcome and quick-start banner on the Portfolio Hub.
+   - Persists dismiss state in `localStorage` so returning users are not repeatedly prompted.
+
+---
+
 ## [2.37.0] - 2026-09-29
 
 ### Summary

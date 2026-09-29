@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.38.0] - 2026-09-29
+
+### Summary
+Implemented comprehensive User Guide, Assurance Playbook, and Onboarding System following user approval of Option 1:
+1. **Interactive Global User Guide & Playbook Modal (`UserGuideModal.tsx`)**:
+   - Built a 5-tab interactive walkthrough accessible from any page (Workflow, 4 Core Pillars, Green Book & Gateways, Gateway Pack Artifacts, and Pro Tips & Shortcuts).
+2. **Persistent Global Header & Footer Entry Points (`_app.tsx`)**:
+   - Added an **"Assurance Guide"** pill with `HelpIcon` in the header actions area and a **"User Guide & Playbook"** action in the corporate footer.
+   - Global event listener (`'open-user-guide'`) allowing any button in the app to open the guide.
+3. **First-Time User Onboarding Banner (`PortfolioDashboard.tsx`)**:
+   - Added a dismissible welcome and quick-start banner on the Portfolio Hub with `localStorage` persistence.
+
+---
+
 ## [2.37.0] - 2026-09-29
 
 ### Summary

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   activeInfrastructureProjects,
@@ -34,7 +34,9 @@ import {
   Timeline as TimelineIcon,
   PictureAsPdf as PdfIcon,
   PieChart as PieChartIcon,
-  BarChart as BarChartIcon
+  BarChart as BarChartIcon,
+  HelpOutline as HelpIcon,
+  MenuBook as BookIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReviewStatusDistributionChart from './ReviewStatusDistributionChart';
@@ -66,6 +68,33 @@ export default function PortfolioDashboard() {
   const [isNewDeadlineModalOpen, setIsNewDeadlineModalOpen] = useState(false);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isWelcomeDismissed, setIsWelcomeDismissed] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const dismissed = localStorage.getItem('ipa_scout_welcome_dismissed');
+      if (dismissed === 'true') {
+        setIsWelcomeDismissed(true);
+      } else {
+        setIsWelcomeDismissed(false);
+      }
+    } catch {
+      setIsWelcomeDismissed(false);
+    }
+  }, []);
+
+  const handleDismissWelcome = () => {
+    setIsWelcomeDismissed(true);
+    try {
+      localStorage.setItem('ipa_scout_welcome_dismissed', 'true');
+    } catch {}
+  };
+
+  const handleOpenUserGuide = () => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-user-guide'));
+    }
+  };
 
   // New Deadline Form State
   const [newDeadlineProject, setNewDeadlineProject] = useState(activeInfrastructureProjects[0].id);
@@ -649,6 +678,124 @@ export default function PortfolioDashboard() {
           }}>
             <CheckIcon style={{ fontSize: '1.1rem' }} />
             <span>{exportNotice}</span>
+          </div>
+        )}
+
+        {/* First-Time User Onboarding & Quick-Start Playbook Banner (Dismissible) */}
+        {!isWelcomeDismissed && (
+          <div style={{
+            marginTop: '16px',
+            padding: '16px 20px',
+            backgroundColor: '#f0fdfa',
+            backgroundImage: 'linear-gradient(to right, #f0fdfa, #eff6ff)',
+            border: '1px solid #99f6e4',
+            borderRadius: '10px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '14px',
+            boxShadow: '0 1px 3px rgba(13, 148, 136, 0.08)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: '1 1 500px' }}>
+              <div style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                backgroundColor: '#0d9488',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <BookIcon style={{ fontSize: '1.25rem' }} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+                    Welcome to IPA Scout: Major Projects Assurance Platform
+                  </h3>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    backgroundColor: '#ccfbf1',
+                    color: '#0f766e',
+                    fontSize: '0.7rem',
+                    fontWeight: 700
+                  }}>
+                    Quick Start Guide
+                  </span>
+                </div>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8125rem', color: '#334155', lineHeight: 1.45 }}>
+                  Auditing <strong>{projects.length} major infrastructure projects</strong> against the HM Treasury Green Book 5-Case model, statutory gateways (Gates 0–5), and corporate standing. Follow the 4-step workflow to evaluate evidence, inspect findings, and export official Gateway Assurance Packs.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleOpenUserGuide}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  backgroundColor: '#0d9488',
+                  border: '1px solid #0d9488',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(13, 148, 136, 0.25)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <BookIcon style={{ fontSize: '1rem' }} />
+                <span>Open User Guide & Playbook</span>
+              </button>
+
+              <Link href="/project-dashboard" passHref legacyBehavior>
+                <a style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '6px',
+                  color: '#1e293b',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  transition: 'all 0.15s ease'
+                }}>
+                  <span>Project Console</span>
+                  <ArrowIcon style={{ fontSize: '0.9rem', color: '#64748b' }} />
+                </a>
+              </Link>
+
+              <button
+                type="button"
+                onClick={handleDismissWelcome}
+                title="Dismiss welcome banner"
+                aria-label="Dismiss welcome banner"
+                style={{
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  color: '#64748b',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderRadius: '4px'
+                }}
+              >
+                <CloseIcon style={{ fontSize: '1.1rem' }} />
+              </button>
+            </div>
           </div>
         )}
 

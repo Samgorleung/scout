@@ -1,13 +1,15 @@
 import type { AppProps } from 'next/app';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import { HelpOutline as HelpIcon } from '@mui/icons-material';
 import { SearchProvider } from '@/context/SearchContext';
 import { GlobalLoadingProvider } from '@/components/LoadingSystem';
 import { ConnectivityProvider, ConnectivityHeaderBadge, OfflineNoticeBanner } from '@/components/ConnectivityStatus';
 import { GlobalHeaderSearch } from '@/components/GlobalHeaderSearch';
 import { AuditFindingsSummaryCard } from '@/components/AuditFindingsSummaryCard';
+import { UserGuideModal } from '@/components/UserGuideModal';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/utils/logger';
 import '../public/styles/index.css';
@@ -16,6 +18,7 @@ import '../public/styles/FileViewer.css';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   const router = useRouter();
+  const [isUserGuideOpen, setIsUserGuideOpen] = useState(false);
 
   useEffect(() => {
     logger.info('IPA Scout application mounted', { path: router.asPath }, 'lifecycle');
@@ -24,8 +27,15 @@ export default function MyApp({ Component, pageProps }: AppProps) {
       logger.trackEvent('page_view', { path: url }, 'navigation');
     };
 
+    const handleOpenGuide = () => {
+      setIsUserGuideOpen(true);
+    };
+
+    window.addEventListener('open-user-guide', handleOpenGuide);
     router.events.on('routeChangeComplete', handleRouteChange);
+
     return () => {
+      window.removeEventListener('open-user-guide', handleOpenGuide);
       router.events.off('routeChangeComplete', handleRouteChange);
     };
   }, [router]);
@@ -99,6 +109,31 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
               {/* Zone 3: Executive Session & Connectivity */}
               <div className="header-actions">
+                {/* User Guide & Playbook Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setIsUserGuideOpen(true)}
+                  aria-label="Open User Guide and Assurance Playbook"
+                  title="IPA Scout User Guide & Assurance Playbook"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+                    border: '1px solid rgba(255, 255, 255, 0.25)',
+                    borderRadius: '9999px',
+                    color: '#ffffff',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <HelpIcon style={{ fontSize: '0.95rem', color: '#93c5fd' }} />
+                  <span>Assurance Guide</span>
+                </button>
+
                 {/* Real-time Network & Cloud Firestore Status Indicator */}
                 <ConnectivityHeaderBadge />
 
@@ -153,6 +188,23 @@ export default function MyApp({ Component, pageProps }: AppProps) {
               <span>HM Treasury & Infrastructure and Projects Authority Assurance Platform</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setIsUserGuideOpen(true)}
+                style={{
+                  border: 'none',
+                  background: 'none',
+                  padding: 0,
+                  color: '#1d70b8',
+                  fontSize: 'inherit',
+                  fontFamily: 'inherit',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                User Guide & Playbook
+              </button>
+              <span className="footer-separator">·</span>
               <Link href="/project-dashboard" prefetch={false} passHref legacyBehavior>
                 <a>Project Dashboard</a>
               </Link>
@@ -173,6 +225,12 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             </div>
           </div>
         </footer>
+
+        {/* Global Interactive User Guide & Assurance Playbook Modal */}
+        <UserGuideModal
+          isOpen={isUserGuideOpen}
+          onClose={() => setIsUserGuideOpen(false)}
+        />
       </div>
           </ConnectivityProvider>
       </GlobalLoadingProvider>
