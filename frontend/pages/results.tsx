@@ -18,7 +18,8 @@ import {
   ArrowBackIosNew as PrevIcon,
   ArrowForwardIos as NextIcon,
   FileDownload as DownloadIcon,
-  PictureAsPdf as PdfIcon
+  PictureAsPdf as PdfIcon,
+  PieChart as PieChartIcon
 } from '@mui/icons-material';
 
 import { fetchItems, fetchRelatedItems, rateResponse } from '@/utils/api';
@@ -27,8 +28,10 @@ import { useSearch } from '@/context/SearchContext';
 import { EvaluationSearchBar } from '@/components/EvaluationSearchBar';
 import { SeverityLevel, SEVERITY_CONFIGS, ALL_SEVERITY_LEVELS } from '@/components/SeverityFilterDropdown';
 import { FindingExpandableDetailView } from '@/components/FindingExpandableDetailView';
+import { FindingsSeverityPieChart } from '@/components/FindingsSeverityPieChart';
 import { exportEvaluationFindingsCsv } from '@/utils/exportComplianceCsv';
 import { logger } from '@/utils/logger';
+import { activeInfrastructureProjects, InfrastructureProject } from '@/lib/seedData';
 
 interface Rating {
   id: string;
@@ -127,9 +130,44 @@ const ResultsTable: React.FC = () => {
 
   // Client-side search and filtering states
   const { globalSearchQuery, setGlobalSearchQuery, setSearchMatchCount } = useSearch();
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
   const [selectedSeverities, setSelectedSeverities] = useState<SeverityLevel[]>(ALL_SEVERITY_LEVELS);
+  const [showSeverityChart, setShowSeverityChart] = useState<boolean>(true);
+
+  // Sync selected project with router query params
+  useEffect(() => {
+    if (router.query.projectId && typeof router.query.projectId === 'string') {
+      setSelectedProjectId(router.query.projectId);
+    } else if (router.query.id && typeof router.query.id === 'string') {
+      setSelectedProjectId(router.query.id);
+    }
+  }, [router.query]);
+
+  const selectedProject = useMemo(() => {
+    if (selectedProjectId === 'ALL') return null;
+    return activeInfrastructureProjects.find(p => p.id === selectedProjectId) || null;
+  }, [selectedProjectId]);
+
+  const handleSelectProject = (newId: string) => {
+    setSelectedProjectId(newId);
+    const updatedQuery = { ...router.query };
+    if (newId === 'ALL') {
+      delete updatedQuery.projectId;
+      delete updatedQuery.id;
+    } else {
+      updatedQuery.projectId = newId;
+    }
+    router.replace(
+      {
+        pathname: router.pathname,
+        query: updatedQuery
+      },
+      undefined,
+      { shallow: true }
+    );
+  };
 
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
@@ -246,8 +284,8 @@ const ResultsTable: React.FC = () => {
     setIsExporting(true);
     try {
       exportEvaluationFindingsCsv({
-        projectName: 'A428 Black Cat to Caxton Gibbet Improvement',
-        currentGate: 'Gate 2: Delivery Strategy',
+        projectName: selectedProject ? selectedProject.name : 'Government Major Projects Portfolio (GMPP)',
+        currentGate: selectedProject ? (selectedProject.gateLabel || selectedProject.currentGate) : 'Gate 2: Delivery Strategy',
         searchQuery: globalSearchQuery,
         statusFilter,
         categoryFilter,
@@ -270,7 +308,7 @@ const ResultsTable: React.FC = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [results.length, filteredResults, globalSearchQuery, statusFilter, categoryFilter]);
+  }, [results.length, filteredResults, globalSearchQuery, statusFilter, categoryFilter, selectedProject]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -601,10 +639,109 @@ const ResultsTable: React.FC = () => {
           marginBottom: '12px'
         }}>
           <Link href="/" prefetch={false} passHref legacyBehavior>
-            <a style={{ color: '#64748b', textDecoration: 'none' }}>Overview</a>
+            <a style={{ color: '#64748b', textDecoration: 'none' }}>Portfolio Hub</a>
           </Link>
           <span>/</span>
           <span style={{ color: '#0f172a', fontWeight: 600 }}>Review Findings & Criteria Analysis</span>
+        </div>
+
+        {/* Project Assurance Context & Scope Switcher Strip */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: selectedProject ? '#f0fdf4' : '#f8fafc',
+          border: selectedProject ? '1px solid #bbf7d0' : '1px solid #e2e8f0',
+          borderRadius: '10px',
+          padding: '12px 18px',
+          marginBottom: '16px',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a' }}>
+              Project Scope:
+            </span>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => handleSelectProject(e.target.value)}
+              aria-label="Filter findings by project"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                outline: 'none',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              }}
+            >
+              <option value="ALL">All GMPP Infrastructure Projects (Entire Corpus)</option>
+              {activeInfrastructureProjects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.code})
+                </option>
+              ))}
+            </select>
+
+            {selectedProject && (
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#1d70b8',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  fontFamily: 'monospace'
+                }}>
+                  {selectedProject.code}
+                </span>
+                <span style={{ fontSize: '0.8125rem', color: '#475569' }}>
+                  • SRO: <strong>{selectedProject.sro}</strong>
+                </span>
+                <span style={{ fontSize: '0.8125rem', color: '#475569' }}>
+                  • {selectedProject.currentGate}
+                </span>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: '#dcfce7',
+                  color: '#15803d',
+                  fontSize: '0.75rem',
+                  fontWeight: 700
+                }}>
+                  {selectedProject.assuranceScore}% Score
+                </span>
+              </div>
+            )}
+          </div>
+
+          {selectedProject && (
+            <Link href={`/project-dashboard?projectId=${selectedProject.id}&tab=findings`} passHref legacyBehavior>
+              <a style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 12px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #1d70b8',
+                borderRadius: '6px',
+                color: '#1d70b8',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                textDecoration: 'none',
+                transition: 'all 0.15s ease'
+              }}>
+                <span>View in Project Assurance Console</span>
+                <NextIcon style={{ fontSize: '0.85rem' }} />
+              </a>
+            </Link>
+          )}
         </div>
 
         {/* Header Strip & Metric Badges */}
@@ -725,6 +862,31 @@ const ResultsTable: React.FC = () => {
                 <PdfIcon style={{ fontSize: '1.05rem', color: '#dc2626' }} />
                 <span>Download PDF</span>
               </button>
+
+              {/* Toggle Findings Severity Pie Chart */}
+              <button
+                type="button"
+                onClick={() => setShowSeverityChart((prev) => !prev)}
+                title={showSeverityChart ? 'Hide Severity Visualization' : 'Show Severity Distribution Pie Chart'}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  backgroundColor: showSeverityChart ? '#e2e8f0' : '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  color: '#0f172a',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <PieChartIcon style={{ fontSize: '1.05rem', color: '#ea580c' }} />
+                <span>{showSeverityChart ? 'Hide Severity Analytics' : 'Severity Analytics'}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -751,6 +913,31 @@ const ResultsTable: React.FC = () => {
           onExportCsv={handleExportCsv}
           isExporting={isExporting}
         />
+
+        {/* Secondary Data Visualization Section: Findings Severity Pie Chart */}
+        {showSeverityChart && (
+          <div style={{ marginBottom: '24px' }}>
+            <FindingsSeverityPieChart
+              findings={results}
+              severityCounts={severityCounts}
+              selectedSeverities={selectedSeverities}
+              onSelectSeverity={(sev) => {
+                setSelectedSeverities((prev) => {
+                  if (prev.length === 1 && prev[0] === sev) {
+                    return ALL_SEVERITY_LEVELS;
+                  }
+                  return [sev];
+                });
+              }}
+              onResetSeverities={() => setSelectedSeverities(ALL_SEVERITY_LEVELS)}
+              title="Gateway Findings Severity Distribution (Recharts Pie)"
+              subtitle="Distribution of gateway review findings across Critical, High, Medium, and Low severity classifications. Click any pie slice or KPI card to filter the evaluation table."
+              showSummaryCards={true}
+              showFilterButtons={true}
+              collapsible={true}
+            />
+          </div>
+        )}
 
         {/* Evaluation Items Grid or Empty Filter State */}
         {filteredResults.length === 0 ? (

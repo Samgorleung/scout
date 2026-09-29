@@ -565,7 +565,7 @@ export interface ExportPortfolioPdfOptions {
     department: string;
     sector: string;
     sro: string;
-    leadAuditor: string;
+    leadAuditor?: string;
     currentGate: string;
     gateLabel?: string;
     reviewStatus: string;
@@ -574,17 +574,19 @@ export interface ExportPortfolioPdfOptions {
     compliantCount: number;
     inProgressCount: number;
     flaggedCount: number;
-    nextReviewDate: string;
-    budgetFormatted: string;
+    nextReviewDate?: string;
+    budgetFormatted?: string;
+    budget?: string;
     criticalRisksCount: number;
     location?: string;
+    [key: string]: any;
   }>;
   deadlines?: Array<{
     id: string;
     projectName: string;
     title?: string;
     milestoneTitle?: string;
-    category: string;
+    category?: string;
     dueDate?: string;
     deadlineDate?: string;
     daysRemaining: number;
@@ -955,11 +957,11 @@ export async function exportPortfolioCompliancePdf(options: ExportPortfolioPdfOp
       `${proj.code}\n${proj.name}`,
       `${proj.sector}\n${proj.department}`,
       proj.gateLabel || proj.currentGate.replace('_', ' '),
-      proj.budgetFormatted,
+      proj.budgetFormatted || proj.budget || '£0m',
       `${proj.compliantCount}/${proj.totalRequirements}\n(${rate}%)`,
       `${proj.assuranceScore}%`,
       proj.reviewStatus,
-      new Date(proj.nextReviewDate).toLocaleDateString('en-GB')
+      proj.nextReviewDate ? new Date(proj.nextReviewDate).toLocaleDateString('en-GB') : 'TBD'
     ];
   });
 
@@ -1023,7 +1025,7 @@ export async function exportPortfolioCompliancePdf(options: ExportPortfolioPdfOp
     const deadlineRows = deadlines.slice(0, 10).map(dl => [
       dl.projectName,
       dl.title || dl.milestoneTitle || 'Assurance Deliverable',
-      dl.category,
+      dl.category || 'Statutory Milestone',
       dl.dueDate ? new Date(dl.dueDate).toLocaleDateString('en-GB') : (dl.deadlineDate || 'TBD'),
       dl.daysRemaining <= 0 ? 'Overdue' : `${dl.daysRemaining} days`,
       dl.status || 'Pending'
@@ -1161,3 +1163,632 @@ export async function exportPortfolioCompliancePdf(options: ExportPortfolioPdfOp
   const filename = `IPA-Portfolio-Compliance-Summary_${dateStamp}.pdf`;
   doc.save(filename);
 }
+
+export interface ExportGatewayPackPdfOptions {
+  project: {
+    id: string;
+    code: string;
+    name: string;
+    department: string;
+    sector: string;
+    sro: string;
+    leadAuditor?: string;
+    leadAssessor?: string;
+    currentGate: string;
+    gateLabel?: string;
+    reviewStatus: string;
+    assuranceScore: number;
+    totalRequirements: number;
+    compliantCount: number;
+    inProgressCount: number;
+    flaggedCount: number;
+    nextReviewDate?: string;
+    startDate?: string;
+    targetCompletionDate?: string;
+    budgetFormatted?: string;
+    location?: string;
+    criticalRisksCount?: number;
+    [key: string]: any;
+  };
+  deliveryConfidence?: 'GREEN' | 'AMBER_GREEN' | 'AMBER' | 'AMBER_RED' | 'RED';
+  determinationNarrative?: string;
+  greenBookCases?: Array<{
+    caseName: string;
+    shortName: string;
+    score: number;
+    benchmark: number;
+    status: string;
+  }>;
+  riskMetrics?: Array<{
+    category: string;
+    riskScore: number;
+    severity: string;
+    exposureCost: string;
+    mitigationStatus: string;
+    owner: string;
+  }>;
+  findings?: Array<{
+    id: string;
+    question: string;
+    category: string;
+    severity: string;
+    status: string;
+    evidence: string;
+    justification?: string;
+    sources?: Array<{ fileName?: string; chunk_id?: string }>;
+  }>;
+  requirements?: Array<{
+    id: string;
+    code: string;
+    title: string;
+    category: string;
+    priority: string;
+    status: string;
+    isChecked: boolean;
+    evidenceThreshold?: string;
+  }>;
+  deadlines?: Array<{
+    id: string;
+    title?: string;
+    milestoneTitle?: string;
+    category?: string;
+    dueDate?: string;
+    daysRemaining?: number;
+    urgency?: string;
+  }>;
+  auditor?: {
+    name: string;
+    email: string;
+    role: string;
+  };
+  executiveRemarks?: string;
+  sectionsToInclude?: {
+    greenBook?: boolean;
+    risks?: boolean;
+    findings?: boolean;
+    checklist?: boolean;
+    deadlines?: boolean;
+  };
+  firestoreDbId?: string;
+}
+
+/**
+ * Generates an official, publication-grade Gateway Assurance Pack & Executive Review Dossier (PDF)
+ * for a specific major infrastructure project, formatted to HM Treasury Green Book & IPA standards.
+ */
+export async function exportProjectGatewayPackPdf(options: ExportGatewayPackPdfOptions): Promise<void> {
+  const {
+    project,
+    deliveryConfidence = 'AMBER_GREEN',
+    determinationNarrative,
+    greenBookCases = [],
+    riskMetrics = [],
+    findings = [],
+    requirements = [],
+    deadlines = [],
+    auditor = {
+      name: 'Lead Assurance Reviewer',
+      email: 'samgorleung1224@gmail.com',
+      role: 'Principal Assurance Reviewer'
+    },
+    executiveRemarks,
+    sectionsToInclude = {
+      greenBook: true,
+      risks: true,
+      findings: true,
+      checklist: true,
+      deadlines: true
+    },
+    firestoreDbId = 'ai-studio-scout-d32152a8-4a4e-4ea6-84c3-214b5ae51fa5'
+  } = options;
+
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 14;
+  const contentWidth = pageWidth - margin * 2;
+
+  const darkNavy: [number, number, number] = [15, 23, 42];
+  const primaryBlue: [number, number, number] = [29, 112, 184];
+  const royalBlue: [number, number, number] = [30, 58, 138];
+  const emeraldGreen: [number, number, number] = [16, 185, 129];
+  const amberOrange: [number, number, number] = [245, 158, 11];
+  const crimsonRed: [number, number, number] = [220, 38, 38];
+  const slateGray: [number, number, number] = [100, 116, 139];
+  const lightBg: [number, number, number] = [248, 250, 252];
+  const borderGray: [number, number, number] = [226, 232, 240];
+
+  const deliveryConfidenceConfig = {
+    GREEN: {
+      label: 'GREEN (High Delivery Confidence)',
+      color: emeraldGreen,
+      bg: [236, 253, 245] as [number, number, number],
+      desc: 'Successful delivery of the project to time, cost and quality appears highly likely.'
+    },
+    AMBER_GREEN: {
+      label: 'AMBER / GREEN (Probable Delivery)',
+      color: [13, 148, 136] as [number, number, number],
+      bg: [240, 253, 250] as [number, number, number],
+      desc: 'Successful delivery appears probable; however, constant management attention is required.'
+    },
+    AMBER: {
+      label: 'AMBER (Feasible with Active Management)',
+      color: amberOrange,
+      bg: [254, 252, 232] as [number, number, number],
+      desc: 'Successful delivery appears feasible but significant risks and issues require prompt attention.'
+    },
+    AMBER_RED: {
+      label: 'AMBER / RED (Delivery in Doubt)',
+      color: [234, 88, 12] as [number, number, number],
+      bg: [255, 247, 237] as [number, number, number],
+      desc: 'Successful delivery of the project is in doubt with major risks or deficits flagged.'
+    },
+    RED: {
+      label: 'RED (Urgent Action Required)',
+      color: crimsonRed,
+      bg: [254, 242, 242] as [number, number, number],
+      desc: 'Successful delivery of the project appears to be unachievable without urgent corrective intervention.'
+    }
+  }[deliveryConfidence] || {
+    label: 'AMBER / GREEN (Probable Delivery)',
+    color: emeraldGreen,
+    bg: [240, 253, 250] as [number, number, number],
+    desc: 'Successful delivery appears probable; constant management attention is required.'
+  };
+
+  let currentY = 12;
+
+  // Sensitivity Banner
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...crimsonRed);
+  doc.text('OFFICIAL - SENSITIVE / COMMERCIAL IN CONFIDENCE', pageWidth / 2, currentY, { align: 'center' });
+
+  currentY += 4;
+
+  // Header Box
+  doc.setFillColor(...royalBlue);
+  doc.roundedRect(margin, currentY, contentWidth, 24, 2, 2, 'F');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(191, 219, 254);
+  doc.text('HM TREASURY & INFRASTRUCTURE AND PROJECTS AUTHORITY', margin + 6, currentY + 7);
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.setTextColor(255, 255, 255);
+  doc.text('GATEWAY ASSURANCE REVIEW DOSSIER & COMPLIANCE PACK', margin + 6, currentY + 14);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(226, 232, 240);
+  doc.text(
+    `Project Code: ${project.code}  •  ${project.gateLabel || project.currentGate}  •  Generated: ${new Date().toLocaleDateString('en-GB')}`,
+    margin + 6,
+    currentY + 20
+  );
+
+  currentY += 28;
+
+  // Project Details Summary Card
+  doc.setFillColor(...lightBg);
+  doc.setDrawColor(...borderGray);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, currentY, contentWidth, 28, 1.5, 1.5, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(...darkNavy);
+  doc.text(project.name, margin + 5, currentY + 7);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...slateGray);
+
+  const colW = contentWidth / 4;
+  // Row 1
+  doc.text(`Department: ${project.department || 'DfT'}`, margin + 5, currentY + 13);
+  doc.text(`Sector: ${project.sector || 'Infrastructure'}`, margin + 5 + colW, currentY + 13);
+  doc.text(`SRO: ${project.sro || 'Dame Patricia Hayes'}`, margin + 5 + colW * 2, currentY + 13);
+  doc.text(`Lead Reviewer: ${project.leadAuditor || project.leadAssessor || auditor.name}`, margin + 5 + colW * 3, currentY + 13);
+
+  // Row 2
+  doc.text(`Budget: ${project.budgetFormatted || '£1.02B'}`, margin + 5, currentY + 20);
+  doc.text(`Target Gate Review: ${project.nextReviewDate ? new Date(project.nextReviewDate).toLocaleDateString('en-GB') : 'Apr 2026'}`, margin + 5 + colW, currentY + 20);
+  doc.text(`Assurance Score: ${project.assuranceScore}%`, margin + 5 + colW * 2, currentY + 20);
+  doc.text(`Criteria Status: ${project.compliantCount}/${project.totalRequirements} Compliant`, margin + 5 + colW * 3, currentY + 20);
+
+  // Verification Badge
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...primaryBlue);
+  doc.text(`Live Cloud Audit Database: ${firestoreDbId}`, margin + 5, currentY + 25.5);
+
+  currentY += 32;
+
+  // Delivery Confidence Banner
+  doc.setFillColor(...deliveryConfidenceConfig.bg);
+  doc.setDrawColor(...deliveryConfidenceConfig.color);
+  doc.setLineWidth(0.6);
+  doc.roundedRect(margin, currentY, contentWidth, 14, 1.5, 1.5, 'FD');
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...deliveryConfidenceConfig.color);
+  doc.text(`GATEWAY DELIVERY CONFIDENCE ASSESSMENT: ${deliveryConfidenceConfig.label}`, margin + 5, currentY + 5.5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(...darkNavy);
+  const narrative = determinationNarrative || deliveryConfidenceConfig.desc;
+  doc.text(narrative, margin + 5, currentY + 10.5);
+
+  currentY += 18;
+
+  // Executive Remarks (if provided)
+  if (executiveRemarks && executiveRemarks.trim()) {
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...borderGray);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(margin, currentY, contentWidth, 14, 1, 1, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...darkNavy);
+    doc.text('Reviewer Executive Remarks & Conditions:', margin + 4, currentY + 4.5);
+
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7);
+    doc.setTextColor(...slateGray);
+    const splitNotes = doc.splitTextToSize(executiveRemarks, contentWidth - 8);
+    doc.text(splitNotes.slice(0, 2), margin + 4, currentY + 9);
+
+    currentY += 17;
+  }
+
+  // Section 1: Green Book 5-Case Model Analysis
+  if (sectionsToInclude.greenBook && greenBookCases.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...darkNavy);
+    doc.text('1. HM Treasury Green Book 5-Case Model Maturity Analysis', margin, currentY + 2);
+
+    currentY += 4;
+
+    const caseTableBody = greenBookCases.map(c => [
+      c.caseName,
+      `${c.score}%`,
+      `${c.benchmark}%`,
+      `${c.score >= c.benchmark ? '+' : ''}${c.score - c.benchmark}%`,
+      c.status
+    ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Green Book Case Dimension', 'Maturity Score', 'HM Treasury Benchmark', 'Variance', 'Review Status']],
+      body: caseTableBody,
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      headStyles: {
+        fillColor: royalBlue,
+        textColor: [255, 255, 255],
+        fontSize: 7.5,
+        fontStyle: 'bold',
+        halign: 'left',
+        cellPadding: 2
+      },
+      bodyStyles: {
+        fontSize: 7,
+        textColor: darkNavy,
+        cellPadding: 2
+      },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 26, halign: 'center' },
+        2: { cellWidth: 32, halign: 'center' },
+        3: { cellWidth: 24, halign: 'center' },
+        4: { cellWidth: 30, halign: 'center' }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 4) {
+          const val = String(data.cell.raw);
+          if (val === 'Exceeding' || val === 'On Track') {
+            data.cell.styles.textColor = emeraldGreen;
+            data.cell.styles.fontStyle = 'bold';
+          } else if (val === 'Under Review') {
+            data.cell.styles.textColor = amberOrange;
+            data.cell.styles.fontStyle = 'bold';
+          } else {
+            data.cell.styles.textColor = crimsonRed;
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // Section 2: Key Risk Exposure & Tolerance Matrix
+  if (sectionsToInclude.risks && riskMetrics.length > 0) {
+    // Check if new page needed
+    if (currentY > pageHeight - 50) {
+      doc.addPage();
+      currentY = margin + 5;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...darkNavy);
+    doc.text('2. Key Risk Exposure & Tolerance Matrix', margin, currentY + 2);
+
+    currentY += 4;
+
+    const riskRows = riskMetrics.map(r => [
+      r.category,
+      `${r.riskScore}/10`,
+      r.severity,
+      r.exposureCost,
+      r.mitigationStatus,
+      r.owner
+    ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Risk Category', 'Risk Score', 'Severity', 'Financial Exposure', 'Mitigation Status', 'Assigned Lead']],
+      body: riskRows,
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      headStyles: {
+        fillColor: royalBlue,
+        textColor: [255, 255, 255],
+        fontSize: 7.5,
+        fontStyle: 'bold',
+        cellPadding: 2
+      },
+      bodyStyles: {
+        fontSize: 7,
+        textColor: darkNavy,
+        cellPadding: 2
+      },
+      columnStyles: {
+        0: { cellWidth: 46 },
+        1: { cellWidth: 20, halign: 'center' },
+        2: { cellWidth: 22, halign: 'center' },
+        3: { cellWidth: 28, halign: 'right' },
+        4: { cellWidth: 38 },
+        5: { cellWidth: 28 }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 2) {
+          const val = String(data.cell.raw).toUpperCase();
+          if (val === 'CRITICAL') {
+            data.cell.styles.textColor = crimsonRed;
+            data.cell.styles.fontStyle = 'bold';
+          } else if (val === 'HIGH') {
+            data.cell.styles.textColor = [234, 88, 12];
+            data.cell.styles.fontStyle = 'bold';
+          } else if (val === 'MEDIUM') {
+            data.cell.styles.textColor = amberOrange;
+          } else {
+            data.cell.styles.textColor = emeraldGreen;
+          }
+        }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // Section 3: Audit Findings & Evidence Log
+  if (sectionsToInclude.findings && findings.length > 0) {
+    if (currentY > pageHeight - 55) {
+      doc.addPage();
+      currentY = margin + 5;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...darkNavy);
+    doc.text('3. Gateway Audit Findings & Deficit Remediation Log', margin, currentY + 2);
+
+    currentY += 4;
+
+    const findingRows = findings.slice(0, 8).map(f => [
+      f.question,
+      f.category,
+      f.severity,
+      f.status,
+      f.justification ? `${f.justification.slice(0, 110)}...` : f.evidence
+    ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Evaluation Criterion', 'Category', 'Severity', 'Status', 'Evidence Justification & Finding Summary']],
+      body: findingRows,
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      headStyles: {
+        fillColor: royalBlue,
+        textColor: [255, 255, 255],
+        fontSize: 7.5,
+        fontStyle: 'bold',
+        cellPadding: 2
+      },
+      bodyStyles: {
+        fontSize: 6.8,
+        textColor: darkNavy,
+        cellPadding: 2
+      },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 20, halign: 'center' },
+        3: { cellWidth: 22, halign: 'center' },
+        4: { cellWidth: 66 }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 2) {
+          const val = String(data.cell.raw).toUpperCase();
+          if (val === 'CRITICAL') {
+            data.cell.styles.textColor = crimsonRed;
+            data.cell.styles.fontStyle = 'bold';
+          } else if (val === 'HIGH') {
+            data.cell.styles.textColor = [234, 88, 12];
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // Section 4: Upcoming Statutory Deadlines
+  if (sectionsToInclude.deadlines && deadlines.length > 0) {
+    if (currentY > pageHeight - 45) {
+      doc.addPage();
+      currentY = margin + 5;
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(...darkNavy);
+    doc.text('4. Statutory Milestone & Gateway Submission Deadlines', margin, currentY + 2);
+
+    currentY += 4;
+
+    const dlRows = deadlines.slice(0, 6).map(dl => [
+      dl.title || dl.milestoneTitle || 'Gateway Deliverable',
+      dl.category || 'Statutory Review',
+      dl.dueDate ? new Date(dl.dueDate).toLocaleDateString('en-GB') : 'Pending',
+      `${dl.daysRemaining ?? 30} days`,
+      dl.urgency || (dl.daysRemaining && dl.daysRemaining <= 14 ? 'Urgent' : 'Routine')
+    ]);
+
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Milestone Deliverable', 'Category', 'Target Date', 'Time Remaining', 'Urgency Status']],
+      body: dlRows,
+      margin: { left: margin, right: margin },
+      theme: 'grid',
+      headStyles: {
+        fillColor: royalBlue,
+        textColor: [255, 255, 255],
+        fontSize: 7.5,
+        fontStyle: 'bold',
+        cellPadding: 2
+      },
+      bodyStyles: {
+        fontSize: 7,
+        textColor: darkNavy,
+        cellPadding: 2
+      },
+      columnStyles: {
+        0: { cellWidth: 70 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 26, halign: 'center' },
+        3: { cellWidth: 26, halign: 'center' },
+        4: { cellWidth: 25, halign: 'center' }
+      }
+    });
+
+    currentY = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // Section 5: Official Gateway Review Sign-off Block
+  if (currentY > pageHeight - 35) {
+    doc.addPage();
+    currentY = margin + 5;
+  }
+
+  const signoffY = currentY;
+  doc.setFillColor(...lightBg);
+  doc.setDrawColor(...borderGray);
+  doc.setLineWidth(0.3);
+  doc.roundedRect(margin, signoffY, contentWidth, 24, 1.5, 1.5, 'FD');
+
+  const sigColW = (contentWidth - 10) / 3;
+
+  // Signatory 1: Lead Assurance Auditor
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(...slateGray);
+  doc.text('Lead Assurance Reviewer:', margin + 5, signoffY + 5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkNavy);
+  doc.text(project.leadAuditor || auditor.name, margin + 5, signoffY + 9);
+  doc.line(margin + 5, signoffY + 15, margin + 5 + sigColW - 10, signoffY + 15);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(...slateGray);
+  doc.text(`Digital Signoff: ${new Date().toLocaleDateString('en-GB')}`, margin + 5, signoffY + 18);
+
+  // Signatory 2: SRO
+  const sroX = margin + 5 + sigColW;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(...slateGray);
+  doc.text('Senior Responsible Owner (SRO):', sroX, signoffY + 5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkNavy);
+  doc.text(project.sro || 'Project SRO', sroX, signoffY + 9);
+  doc.line(sroX, signoffY + 15, sroX + sigColW - 10, signoffY + 15);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(...slateGray);
+  doc.text('Gateway Determination Accepted', sroX, signoffY + 18);
+
+  // Signatory 3: HM Treasury Approvals Committee
+  const hmtX = margin + 5 + sigColW * 2;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(...slateGray);
+  doc.text('HM Treasury Approvals Committee:', hmtX, signoffY + 5);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...darkNavy);
+  doc.text('IPA Executive Review Board', hmtX, signoffY + 9);
+  doc.line(hmtX, signoffY + 15, hmtX + sigColW - 10, signoffY + 15);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(...slateGray);
+  doc.text('Official Seal of Assurance', hmtX, signoffY + 18);
+
+  // Footer on every page
+  const totalPages = (doc.internal as any).getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.3);
+    doc.line(margin, pageHeight - 10, pageWidth - margin, pageHeight - 10);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.setTextColor(...slateGray);
+    doc.text(
+      `UK Infrastructure and Projects Authority • ${project.code} Gateway Assurance Pack • OFFICIAL - SENSITIVE`,
+      margin,
+      pageHeight - 6.5
+    );
+    doc.text(
+      `Page ${i} of ${totalPages}`,
+      pageWidth - margin,
+      pageHeight - 6.5,
+      { align: 'right' }
+    );
+  }
+
+  // Trigger download
+  const cleanCode = (project.code || 'GMPP').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const cleanGate = (project.gateLabel || project.currentGate || 'Gate_2').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  const filename = `IPA-Gateway-Assurance-Pack_${cleanCode}_${cleanGate}_${dateStr}.pdf`;
+  doc.save(filename);
+}
+

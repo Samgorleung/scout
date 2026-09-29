@@ -564,6 +564,7 @@ code, pre, .font-mono {
   .recharts-responsive-container,
   .recharts-wrapper,
   .recharts-surface,
+  .findings-severity-pie-chart-section,
   svg {
     max-width: 100% !important;
     overflow: visible !important;

@@ -32,7 +32,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
 
   const isActive = (pathname: string) => {
     if (pathname === '/') {
-      return router.pathname === '/';
+      return router.pathname === '/' || router.pathname === '/dashboard';
+    }
+    if (pathname === '/project-dashboard') {
+      return router.pathname === '/project-dashboard' || router.pathname === '/compliance-tracker';
     }
     return router.pathname.startsWith(pathname);
   };
@@ -67,21 +70,16 @@ export default function MyApp({ Component, pageProps }: AppProps) {
                 </a>
               </Link>
 
-              {/* Zone 2: Navigation Links */}
+              {/* Zone 2: Navigation Links (4 Consolidated Pillars) */}
               <nav className="header-nav">
-                <Link href="/dashboard" prefetch={false} passHref legacyBehavior>
-                  <a className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
-                    Portfolio Dashboard
-                  </a>
-                </Link>
                 <Link href="/" prefetch={false} passHref legacyBehavior>
                   <a className={`nav-link ${isActive('/') ? 'active' : ''}`}>
-                    Overview
+                    Portfolio Hub
                   </a>
                 </Link>
-                <Link href="/compliance-tracker" prefetch={false} passHref legacyBehavior>
-                  <a className={`nav-link ${isActive('/compliance-tracker') ? 'active' : ''}`}>
-                    Compliance Tracker
+                <Link href="/project-dashboard" prefetch={false} passHref legacyBehavior>
+                  <a className={`nav-link ${isActive('/project-dashboard') ? 'active' : ''}`}>
+                    Project Assurance
                   </a>
                 </Link>
                 <Link href="/results" prefetch={false} passHref legacyBehavior>
@@ -155,6 +153,10 @@ export default function MyApp({ Component, pageProps }: AppProps) {
               <span>HM Treasury & Infrastructure and Projects Authority Assurance Platform</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <Link href="/project-dashboard" prefetch={false} passHref legacyBehavior>
+                <a>Project Dashboard</a>
+              </Link>
+              <span className="footer-separator">·</span>
               <Link href="/compliance-tracker" prefetch={false} passHref legacyBehavior>
                 <a>Tracker</a>
               </Link>

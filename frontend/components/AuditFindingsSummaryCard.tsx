@@ -13,6 +13,7 @@ import {
 } from '@/lib/seedData';
 import { SeverityFilterDropdown, SeverityLevel, ALL_SEVERITY_LEVELS } from './SeverityFilterDropdown';
 import { AuditFindingsTrendChart } from './AuditFindingsTrendChart';
+import { FindingsSeverityPieChart } from './FindingsSeverityPieChart';
 import { AutoRefreshToggle } from './AutoRefreshToggle';
 import { getFirestoreAll } from '@/lib/firebase';
 import {
@@ -31,7 +32,8 @@ import {
   Shield as ShieldIcon,
   OpenInNew as OpenInNewIcon,
   Close as CloseIcon,
-  PictureAsPdf as PictureAsPdfIcon
+  PictureAsPdf as PictureAsPdfIcon,
+  PieChart as PieChartIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -51,6 +53,7 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
   const [isCollapsed, setIsCollapsed] = useState<boolean>(initialCollapsed);
   const [showAuditFeed, setShowAuditFeed] = useState<boolean>(false);
   const [showTrendChart, setShowTrendChart] = useState<boolean>(false);
+  const [showSeverityChart, setShowSeverityChart] = useState<boolean>(false);
   const [auditLogFilter, setAuditLogFilter] = useState<'ALL' | 'PASSED' | 'FAILED' | 'PENDING'>('ALL');
   const [selectedSeverities, setSelectedSeverities] = useState<SeverityLevel[]>(ALL_SEVERITY_LEVELS);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -359,6 +362,30 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
             >
               <ShowChartIcon style={{ fontSize: '1rem', color: '#1d70b8' }} />
               <span>Findings Trend</span>
+            </button>
+
+            {/* Quick Toggle for Severity Pie Chart */}
+            <button
+              type="button"
+              onClick={() => setShowSeverityChart(prev => !prev)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                border: '1px solid #cbd5e1',
+                backgroundColor: showSeverityChart ? '#e2e8f0' : '#ffffff',
+                color: '#334155',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="Toggle findings severity distribution pie chart"
+            >
+              <PieChartIcon style={{ fontSize: '1rem', color: '#ea580c' }} />
+              <span>Severity Chart</span>
             </button>
 
             {/* Quick Toggle for Recent Audit Log Stream */}
@@ -957,6 +984,43 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
                       }}
                     >
                       <AuditFindingsTrendChart height={300} showControls={true} showSummaryBadges={true} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Collapsible Findings Severity Pie Chart */}
+                <AnimatePresence>
+                  {showSeverityChart && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{
+                        marginTop: '16px',
+                        borderTop: '1px solid #e2e8f0',
+                        paddingTop: '16px'
+                      }}
+                    >
+                      <FindingsSeverityPieChart
+                        requirements={requirements}
+                        severityCounts={severityCounts}
+                        selectedSeverities={selectedSeverities}
+                        onSelectSeverity={(sev) => {
+                          setSelectedSeverities(prev => {
+                            if (prev.length === 1 && prev[0] === sev) {
+                              return ALL_SEVERITY_LEVELS;
+                            }
+                            return [sev];
+                          });
+                        }}
+                        onResetSeverities={() => setSelectedSeverities(ALL_SEVERITY_LEVELS)}
+                        title="Audit Findings Severity Distribution"
+                        subtitle="Distribution of assurance criteria and findings categorized by risk impact (Critical, High, Medium, Low)."
+                        showSummaryCards={true}
+                        showFilterButtons={true}
+                        chartHeight={260}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>

@@ -39,6 +39,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import ReviewStatusDistributionChart from './ReviewStatusDistributionChart';
 import ComplianceStatusPieChart from './ComplianceStatusPieChart';
+import { FindingsSeverityPieChart } from './FindingsSeverityPieChart';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DashboardAuditFindingsSearch } from './DashboardAuditFindingsSearch';
 import { AutoRefreshToggle } from './AutoRefreshToggle';
@@ -51,7 +52,7 @@ export default function PortfolioDashboard() {
   const [projects, setProjects] = useState<InfrastructureProject[]>(activeInfrastructureProjects);
   const [deadlines, setDeadlines] = useState<UpcomingDeadline[]>(upcomingProjectDeadlines);
   const [activities, setActivities] = useState<RecentProgressMetric[]>(recentAuditProgressMetrics);
-  const [dashboardChartTab, setDashboardChartTab] = useState<'compliance_pie' | 'review_bars' | 'both'>('compliance_pie');
+  const [dashboardChartTab, setDashboardChartTab] = useState<'compliance_pie' | 'severity_pie' | 'review_bars' | 'both'>('compliance_pie');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,7 +105,9 @@ export default function PortfolioDashboard() {
         return parseB(b.budgetFormatted) - parseB(a.budgetFormatted);
       }
       // default: by next review date
-      return new Date(a.nextReviewDate).getTime() - new Date(b.nextReviewDate).getTime();
+      const dateA = a.nextReviewDate ? new Date(a.nextReviewDate).getTime() : 0;
+      const dateB = b.nextReviewDate ? new Date(b.nextReviewDate).getTime() : 0;
+      return dateA - dateB;
     });
   }, [projects, selectedSector, selectedGate, selectedStatus, searchQuery, sortBy]);
 
@@ -198,10 +201,13 @@ export default function PortfolioDashboard() {
       title: newDeadlineTitle,
       category: newDeadlineCategory,
       dueDate: newDeadlineDate,
+      deadlineDate: newDeadlineDate,
       daysRemaining: diffDays,
       urgency,
       gate: proj.gateLabel.split(':')[0].trim(),
       leadOwner: newDeadlineOwner,
+      owner: newDeadlineOwner,
+      requiredItem: newDeadlineTitle,
       status: 'Pending',
       description: newDeadlineDescription || `Scheduled milestone for ${proj.name} under ${newDeadlineCategory}.`
     };
@@ -902,6 +908,28 @@ export default function PortfolioDashboard() {
           </button>
 
           <button
+            onClick={() => setDashboardChartTab('severity_pie')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              fontSize: '0.78125rem',
+              fontWeight: dashboardChartTab === 'severity_pie' ? 700 : 500,
+              backgroundColor: dashboardChartTab === 'severity_pie' ? '#ffffff' : 'transparent',
+              color: dashboardChartTab === 'severity_pie' ? '#0f172a' : '#64748b',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              boxShadow: dashboardChartTab === 'severity_pie' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <PieChartIcon style={{ fontSize: '1rem', color: '#ea580c' }} />
+            <span>Findings Severity (Recharts Pie)</span>
+          </button>
+
+          <button
             onClick={() => setDashboardChartTab('review_bars')}
             style={{
               display: 'inline-flex',
@@ -941,12 +969,12 @@ export default function PortfolioDashboard() {
               transition: 'all 0.15s ease'
             }}
           >
-            <span>View Both</span>
+            <span>View All Charts</span>
           </button>
         </div>
       </div>
 
-      {/* Render Recharts Compliance Status Pie Chart & D3 Review Distribution with Fault Isolation */}
+      {/* Render Recharts Compliance Status Pie Chart, Findings Severity Pie Chart & D3 Review Distribution with Fault Isolation */}
       <ErrorBoundary isolate componentName="Portfolio Analytics Charts" resetKeys={[dashboardChartTab, selectedStatus]}>
         {(dashboardChartTab === 'compliance_pie' || dashboardChartTab === 'both') && (
           <ComplianceStatusPieChart
@@ -955,6 +983,15 @@ export default function PortfolioDashboard() {
             onSelectStatus={setSelectedStatus}
             title="Portfolio Compliance Requirements Status (Recharts)"
             subtitle="Real-time status breakdown across all portfolio compliance criteria (Compliant, Non-compliant, In Progress) for project stakeholders."
+            showSummaryCards={true}
+            showFilterButtons={true}
+          />
+        )}
+
+        {(dashboardChartTab === 'severity_pie' || dashboardChartTab === 'both') && (
+          <FindingsSeverityPieChart
+            title="Portfolio Assurance Findings by Severity Level (Recharts)"
+            subtitle="Categorization of all portfolio audit findings across Critical, High, Medium, and Low severity classifications."
             showSummaryCards={true}
             showFilterButtons={true}
           />
@@ -1385,7 +1422,25 @@ export default function PortfolioDashboard() {
                         <ArrowIcon style={{ fontSize: '0.9rem' }} />
                       </button>
 
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <Link href={`/project-dashboard?projectId=${proj.id}`} passHref legacyBehavior prefetch={false}>
+                          <a style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#eff6ff',
+                            border: '1px solid #bfdbfe',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            color: '#1d70b8',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            <span>Project Dashboard</span>
+                            <AssessmentIcon style={{ fontSize: '0.85rem' }} />
+                          </a>
+                        </Link>
                         <Link href="/results" passHref legacyBehavior prefetch={false}>
                           <a style={{
                             padding: '6px 12px',
@@ -2067,6 +2122,25 @@ export default function PortfolioDashboard() {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <Link href={`/project-dashboard?projectId=${selectedProjectForModal.id}`} passHref legacyBehavior prefetch={false}>
+                <a style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#1d70b8',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <AssessmentIcon style={{ fontSize: '1rem' }} />
+                  <span>Open Project Dashboard</span>
+                </a>
+              </Link>
+
               <button
                 type="button"
                 onClick={() => handleExportSingleProjectPdf(selectedProjectForModal)}

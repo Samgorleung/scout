@@ -6,6 +6,67 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.37.0] - 2026-09-29
+
+### Summary
+Implemented both prioritized core enhancements following user approval:
+1. **Embedded Review Findings & Evidence Workspace in Project Console (`ProjectDashboard.tsx`, `results.tsx`)**:
+   - Added a dedicated 4th tab to the Project Console: **"Review Findings & Evidence"** (`activeTab === 'findings'`), bringing the complete criteria evaluation corpus directly into the reviewer's single-project workspace.
+   - Interactive severity scorecards (**Critical**, **High**, **Medium**, **Low**), search query input, and multi-faceted status/category filtering.
+   - Integrated `FindingExpandableDetailView` drawer displaying evidence thresholds, citations, and step-by-step remediation roadmaps with carousel navigation.
+   - Added bidirectional Project Scope selection and synchronization to the dedicated findings view (`results.tsx`) with URL deep-linking (`?projectId=...`).
+2. **Official HM Treasury Gateway Assurance Pack & Executive Review Dossier Generator (`exportProjectGatewayPackPdf`)**:
+   - Engineered publication-grade Gateway Assurance Pack PDF export (`exportCompliancePdf.ts`) formatted to HM Treasury Green Book and IPA standards.
+   - Compiles Project Metadata, SRO & Lead Auditor credentials, Gateway Delivery Confidence Assessment (Green, Amber/Green, Amber, Amber/Red, Red), 5-Case Model maturity analysis against the 80% passing benchmark, Key Risk Exposure matrix, Audit Findings Log, Statutory Milestone Timeline, and official tripartite sign-off seals.
+   - Added interactive Gateway Assurance Pack Generator modal in `ProjectDashboard.tsx` with delivery confidence picker, customizable executive remarks, and section toggles.
+
+---
+
+## [2.36.0] - 2026-09-29
+
+### Summary
+Reorganized and streamlined application layout, information hierarchy, and global navigation around **4 core intuitive pillars**, resolving cognitive overload and eliminating component duplication:
+- **Consolidated 4-Pillar Top Navigation (`_app.tsx`)**:
+  1. **Portfolio Hub** (`/` and `/dashboard`): Macro portfolio health, cross-project GMPP assurance index, sector/gate benchmarks, upcoming statutory milestones, and cross-project portfolio table.
+  2. **Project Assurance** (`/project-dashboard` and `/compliance-tracker`): Unified single-project console combining the Green Book 5-Case model, Gateway criteria donut, risk exposure bar chart, velocity area timeline, and the full interactive compliance checklist in a tabbed workspace.
+  3. **Review Findings** (`/results`): Dedicated evidence review surface with interactive severity pie chart filtering and expandable remediation drawers.
+  4. **Document Dossier** (`/file-viewer`): PDF evidence canvas inspection, chunk citation jumping, and bundle upload.
+- **Default Landing Page Streamlining (`index.tsx`)**: Replaced the bloated, duplicated 943-line monolithic overview page with the high-performance **Portfolio Hub** (`PortfolioDashboard.tsx`), giving reviewers an immediate, high-impact overview of all UK infrastructure projects upon launch.
+- **Integrated Project Console Tabs (`ProjectDashboard.tsx`)**: Added seamless sub-navigation across:
+  - *Assurance Profile & Risk Metrics*: 5-Case maturity scores, criteria donut, and risk exposure.
+  - *Interactive Compliance Checklist*: Embedded `ComplianceTracker` with signoff checkboxes, comment threads, and deadline alerts.
+  - *Corporate Entity & Supplier Standing*: Embedded `ComplianceOfficerWidget` for autonomous Companies House / entity standing verification.
+- **Route Compatibility & Deep-Linking**: Maintained full backward compatibility for `/dashboard` and `/compliance-tracker`, directing smoothly to their corresponding console tabs without broken links.
+
+---
+
+## [2.35.1] - 2026-09-29
+
+### Summary
+Diagnosed and eliminated the extraneous environment variable prompt triggered in the AI Studio preview environment:
+- **Root Cause**: An unused variable placeholder (`NEXT_PUBLIC_APP_NAME=IPA Scout`) had been written into `.env.example`. Google AI Studio's environment manager automatically scans `.env.example` for variable definitions, detecting `NEXT_PUBLIC_APP_NAME` as an unconfigured user environment variable and opening the modal asking the user to provide a value.
+- **Resolution**: Removed `.env.example` completely. Restored strict zero-config runtime standards where the Gemini API key is automatically injected server-side by AI Studio via `MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API` and Cloud Firestore configuration is ingested directly from `firebase-applet-config.json`. The user is no longer prompted to enter any environment variables.
+
+---
+
+## [2.35.0] - 2026-09-29
+
+### Summary
+Created a dedicated **Project Dashboard** view (`ProjectDashboard.tsx`, `/project-dashboard`) providing infrastructure project review teams and Senior Responsible Owners (SROs) with an executive summary of project status, key risk metrics, and recent audit activity using **Recharts** data visualizations:
+- **Project Status Summary**: Recharts Donut chart displaying gateway criteria breakdown (Compliant, In Progress, Flagged Deficits) and 5-Case Green Book assurance bar chart (Strategic, Economic, Commercial, Financial, Management Case maturity vs 80% passing benchmark).
+- **Key Risk Metrics**: Recharts severity bar chart comparing risk exposure against tolerance thresholds, accompanied by financial impact cards across statutory planning, procurement, environmental mitigation, and BIM compliance.
+- **Recent Audit Activity & Velocity**: Recharts 6-week timeline area chart tracking verification velocity (compliant transitions, risk flags, evidence submissions) with real-time Firestore sync and chronological log feed.
+- **Interactive Project Switcher**: Deep-linking, project selection dropdown, print-to-PDF export, and seamless integration with the Portfolio Dashboard and navigation header.
+
+---
+
+## [2.34.0] - 2026-09-29
+
+### Summary
+Created a high-fidelity **Findings Severity Pie Chart** (`FindingsSeverityPieChart.tsx`) secondary data visualization section that presents audit findings categorized by their regulatory risk severity levels (**Critical**, **High**, **Medium**, and **Low**). Integrated across the Findings evaluation view (`results.tsx`), Portfolio Dashboard visual analytics hub (`PortfolioDashboard.tsx`), Overview assurance synthesis (`index.tsx`), and Executive scorecard (`AuditFindingsSummaryCard.tsx`) with interactive slice filtering, Donut/Pie view modes, 4 severity KPI summary cards, and real-time synchronization with findings tables.
+
+---
+
 ## [2.33.1] - 2026-09-29
 
 ### Summary
