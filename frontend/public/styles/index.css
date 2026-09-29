@@ -209,6 +209,7 @@ code, pre, .font-mono {
   }
 
   /* 4. Project Evaluation Logs, Cards, & Section Breaks */
+  .audit-findings-summary-card,
   .summary-card,
   .evaluation-item,
   .log-entry,

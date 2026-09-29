@@ -24,6 +24,7 @@ import { fetchItems, fetchRelatedItems, rateResponse } from '@/utils/api';
 import { ResultsSkeleton } from '@/components/LoadingSystem';
 import { useSearch } from '@/context/SearchContext';
 import { EvaluationSearchBar } from '@/components/EvaluationSearchBar';
+import { SeverityLevel, SEVERITY_CONFIGS, ALL_SEVERITY_LEVELS } from '@/components/SeverityFilterDropdown';
 import { exportEvaluationFindingsCsv } from '@/utils/exportComplianceCsv';
 import { logger } from '@/utils/logger';
 
@@ -89,6 +90,7 @@ interface TransformedResult {
   Category: string;
   Gate: string;
   Status: string;
+  Severity: SeverityLevel;
   Justification: string;
   Sources: Source[];
   id: string;
@@ -125,6 +127,7 @@ const ResultsTable: React.FC = () => {
   const { globalSearchQuery, setGlobalSearchQuery, setSearchMatchCount } = useSearch();
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
+  const [selectedSeverities, setSelectedSeverities] = useState<SeverityLevel[]>(ALL_SEVERITY_LEVELS);
 
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
@@ -132,6 +135,21 @@ const ResultsTable: React.FC = () => {
       if (r.Category) set.add(r.Category);
     });
     return Array.from(set).sort();
+  }, [results]);
+
+  const severityCounts = useMemo(() => {
+    const counts: Record<SeverityLevel, number> = {
+      Critical: 0,
+      High: 0,
+      Medium: 0,
+      Low: 0
+    };
+    results.forEach((r) => {
+      if (r.Severity && counts[r.Severity] !== undefined) {
+        counts[r.Severity]++;
+      }
+    });
+    return counts;
   }, [results]);
 
   const filteredResults = useMemo(() => {
@@ -142,11 +160,19 @@ const ResultsTable: React.FC = () => {
       if (categoryFilter !== 'ALL' && item.Category !== categoryFilter) {
         return false;
       }
+      if (
+        selectedSeverities.length > 0 &&
+        selectedSeverities.length < ALL_SEVERITY_LEVELS.length &&
+        !selectedSeverities.includes(item.Severity)
+      ) {
+        return false;
+      }
       if (globalSearchQuery.trim()) {
         const q = globalSearchQuery.toLowerCase().trim();
         const question = item.Criterion?.question?.toLowerCase() || '';
         const category = item.Category?.toLowerCase() || '';
         const status = item.Status?.toLowerCase() || '';
+        const severity = item.Severity?.toLowerCase() || '';
         const evidence = item.Evidence?.toLowerCase() || '';
         const justification = item.Justification?.toLowerCase() || '';
         const gate = item.Gate?.toLowerCase() || '';
@@ -156,6 +182,7 @@ const ResultsTable: React.FC = () => {
           question.includes(q) ||
           category.includes(q) ||
           status.includes(q) ||
+          severity.includes(q) ||
           evidence.includes(q) ||
           justification.includes(q) ||
           gate.includes(q) ||
@@ -164,16 +191,22 @@ const ResultsTable: React.FC = () => {
       }
       return true;
     });
-  }, [results, globalSearchQuery, statusFilter, categoryFilter]);
+  }, [results, globalSearchQuery, statusFilter, categoryFilter, selectedSeverities]);
 
   // Synchronize match count with global search context
   useEffect(() => {
-    if (globalSearchQuery.trim() || statusFilter !== 'ALL' || categoryFilter !== 'ALL') {
+    const hasActiveFilters =
+      Boolean(globalSearchQuery.trim()) ||
+      statusFilter !== 'ALL' ||
+      categoryFilter !== 'ALL' ||
+      (selectedSeverities.length > 0 && selectedSeverities.length < ALL_SEVERITY_LEVELS.length);
+
+    if (hasActiveFilters) {
       setSearchMatchCount(filteredResults.length);
     } else {
       setSearchMatchCount(null);
     }
-  }, [globalSearchQuery, statusFilter, categoryFilter, filteredResults.length, setSearchMatchCount]);
+  }, [globalSearchQuery, statusFilter, categoryFilter, selectedSeverities, filteredResults.length, setSearchMatchCount]);
 
   const currentSelectedIndex = useMemo(() => {
     if (!selectedRow) return -1;
@@ -204,6 +237,7 @@ const ResultsTable: React.FC = () => {
     setGlobalSearchQuery('');
     setStatusFilter('ALL');
     setCategoryFilter('ALL');
+    setSelectedSeverities(ALL_SEVERITY_LEVELS);
   };
 
   const handleExportCsv = useCallback(() => {
@@ -265,6 +299,19 @@ const ResultsTable: React.FC = () => {
               })
             );
 
+            let severity: SeverityLevel = 'Medium';
+            if (result.answer === 'Negative') {
+              if (result.criterion.category === 'Commercial' || result.criterion.category === 'Strategic') {
+                severity = 'Critical';
+              } else {
+                severity = 'High';
+              }
+            } else if (result.answer === 'Neutral') {
+              severity = 'Medium';
+            } else if (result.answer === 'Positive') {
+              severity = 'Low';
+            }
+
             return {
               Criterion: result.criterion,
               Chunks: result.chunks,
@@ -274,6 +321,7 @@ const ResultsTable: React.FC = () => {
               Category: result.criterion.category,
               Gate: result.criterion.gate,
               Status: result.answer,
+              Severity: severity,
               Justification: result.full_text,
               Sources: sources,
               id: result.id,
@@ -371,13 +419,40 @@ const ResultsTable: React.FC = () => {
     );
   };
 
+  const severityRenderer = (params: ICellRendererParams) => {
+    const sev = (params.value || 'Medium') as SeverityLevel;
+    const config = SEVERITY_CONFIGS[sev] || SEVERITY_CONFIGS.Medium;
+
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            padding: '2px 8px',
+            borderRadius: '4px',
+            backgroundColor: config.badgeBg,
+            border: `1px solid ${config.badgeBorder}`,
+            color: config.badgeText,
+            fontSize: '0.75rem',
+            fontWeight: 700
+          }}
+        >
+          <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: config.dotColor }} />
+          {config.shortLabel}
+        </span>
+      </div>
+    );
+  };
+
   const columnDefs: ColDef[] = [
     {
       headerName: 'Assurance Criterion',
       field: 'Criterion',
       wrapText: true,
       autoHeight: true,
-      flex: 5,
+      flex: 4.5,
       cellRenderer: criterionRenderer,
       cellStyle: { textAlign: 'left' },
       headerClass: 'center-header',
@@ -387,7 +462,7 @@ const ResultsTable: React.FC = () => {
       field: 'Category',
       wrapText: true,
       autoHeight: true,
-      flex: 1.5,
+      flex: 1.4,
       cellStyle: { textAlign: 'center', fontSize: '0.8125rem', fontWeight: 500 },
       headerClass: 'center-header',
     },
@@ -396,8 +471,18 @@ const ResultsTable: React.FC = () => {
       field: 'Status',
       wrapText: true,
       autoHeight: true,
-      flex: 1.2,
+      flex: 1.1,
       cellRenderer: statusRenderer,
+      cellStyle: { textAlign: 'center' },
+      headerClass: 'center-header',
+    },
+    {
+      headerName: 'Severity',
+      field: 'Severity',
+      wrapText: true,
+      autoHeight: true,
+      flex: 1.1,
+      cellRenderer: severityRenderer,
       cellStyle: { textAlign: 'center' },
       headerClass: 'center-header',
     },
@@ -621,12 +706,15 @@ const ResultsTable: React.FC = () => {
           onSearchChange={setGlobalSearchQuery}
           totalCount={results.length}
           filteredCount={filteredResults.length}
-          placeholder="Filter evaluation items by question, category, status, justification, or cited docs..."
+          placeholder="Filter evaluation items by question, category, status, severity, justification, or cited docs..."
           statusFilter={statusFilter}
           onStatusFilterChange={setStatusFilter}
           categoryFilter={categoryFilter}
           categories={availableCategories}
           onCategoryFilterChange={setCategoryFilter}
+          selectedSeverities={selectedSeverities}
+          onSeveritiesChange={setSelectedSeverities}
+          severityCounts={severityCounts}
           onClearFilters={handleClearFilters}
           onQuickNavigateNext={handleQuickNavigateNext}
           onQuickNavigatePrev={handleQuickNavigatePrev}

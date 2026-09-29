@@ -7,6 +7,7 @@ import { SearchProvider } from '@/context/SearchContext';
 import { GlobalLoadingProvider } from '@/components/LoadingSystem';
 import { ConnectivityProvider, ConnectivityHeaderBadge, OfflineNoticeBanner } from '@/components/ConnectivityStatus';
 import { GlobalHeaderSearch } from '@/components/GlobalHeaderSearch';
+import { AuditFindingsSummaryCard } from '@/components/AuditFindingsSummaryCard';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/utils/logger';
 import '../public/styles/index.css';
@@ -139,6 +140,8 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             componentName="Application Viewport"
             resetKeys={[router.asPath]}
           >
+            {/* High-Level Summary Card displaying Passed, Failed, and Pending findings */}
+            <AuditFindingsSummaryCard />
             <Component {...pageProps} />
           </ErrorBoundary>
         </main>

@@ -8,6 +8,7 @@ import {
   RestartAlt as ResetIcon,
   FileDownload as DownloadIcon
 } from '@mui/icons-material';
+import { SeverityFilterDropdown, SeverityLevel } from './SeverityFilterDropdown';
 
 export interface EvaluationSearchBarProps {
   searchQuery: string;
@@ -20,6 +21,11 @@ export interface EvaluationSearchBarProps {
   categoryFilter?: string;
   categories?: string[];
   onCategoryFilterChange?: (category: string) => void;
+  selectedSeverities?: SeverityLevel[];
+  onSeveritiesChange?: (severities: SeverityLevel[]) => void;
+  severityCounts?: Partial<Record<SeverityLevel, number>>;
+  singleSeverity?: string;
+  onSingleSeverityChange?: (severity: string) => void;
   onClearFilters?: () => void;
   onQuickNavigateNext?: () => void;
   onQuickNavigatePrev?: () => void;
@@ -39,6 +45,11 @@ export const EvaluationSearchBar: React.FC<EvaluationSearchBarProps> = ({
   categoryFilter = 'ALL',
   categories = [],
   onCategoryFilterChange,
+  selectedSeverities,
+  onSeveritiesChange,
+  severityCounts,
+  singleSeverity,
+  onSingleSeverityChange,
   onClearFilters,
   onQuickNavigateNext,
   onQuickNavigatePrev,
@@ -72,10 +83,15 @@ export const EvaluationSearchBar: React.FC<EvaluationSearchBarProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [searchQuery, onSearchChange]);
 
+  const hasActiveSeverityFilter =
+    Boolean(selectedSeverities && selectedSeverities.length > 0 && selectedSeverities.length < 4) ||
+    Boolean(singleSeverity && singleSeverity !== 'ALL');
+
   const hasActiveFilters =
     Boolean(searchQuery.trim()) ||
     (statusFilter && statusFilter !== 'ALL') ||
-    (categoryFilter && categoryFilter !== 'ALL');
+    (categoryFilter && categoryFilter !== 'ALL') ||
+    hasActiveSeverityFilter;
 
   return (
     <div
@@ -417,6 +433,19 @@ export const EvaluationSearchBar: React.FC<EvaluationSearchBarProps> = ({
               ))}
             </select>
           </div>
+        )}
+
+        {/* Severity Level Filter Dropdown */}
+        {(onSeveritiesChange || onSingleSeverityChange) && (
+          <SeverityFilterDropdown
+            selectedSeverities={selectedSeverities}
+            onSeveritiesChange={onSeveritiesChange}
+            singleSeverity={singleSeverity}
+            onSingleSeverityChange={onSingleSeverityChange}
+            severityCounts={severityCounts}
+            totalCount={totalCount}
+            compact={true}
+          />
         )}
 
         {/* Live Filter Count Indicator */}

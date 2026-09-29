@@ -6,6 +6,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.27.0] - 2026-09-29
+
+### Summary
+Built a filtering dropdown component (`SeverityFilterDropdown.tsx`) that allows users to toggle the visibility of audit findings based on their severity level (**Critical**, **High**, **Medium**, **Low**). Integrated the severity filtering system into the `EvaluationSearchBar` component, the Review Findings table (`results.tsx`), and the Executive Audit Summary Card (`AuditFindingsSummaryCard.tsx`).
+
+---
+
+### Added & Enhanced
+
+#### 1. Severity Filter Dropdown Component (`frontend/components/SeverityFilterDropdown.tsx`)
+- **Four-Tier Severity Classification**:
+  - **Critical Severity**: Crimson red indicator (`#dc2626`) for immediate statutory non-compliance or critical delivery blockers.
+  - **High Severity**: Dark orange indicator (`#ea580c`) for significant assurance gaps or heightened project risks.
+  - **Medium Severity**: Warm amber indicator (`#d97706`) for standard review criteria or items pending clarification.
+  - **Low Severity**: Forest green indicator (`#059669`) for minor observations, routine notes, or verified criteria.
+- **Multi-Select & Single-Select Filtering**:
+  - Checkbox toggles per severity level with live item count badges.
+  - One-click `Select All`, `Reset`, and `only` isolation shortcuts.
+  - Outside-click detection and accessible ARIA listbox markup.
+
+#### 2. Surface Integrations
+- **Review Findings & Search Bar (`frontend/pages/results.tsx`, `frontend/components/EvaluationSearchBar.tsx`)**:
+  - Integrated `SeverityFilterDropdown` into the faceted search toolbar.
+  - Added a dedicated `Severity` column to the Ag-Grid review findings table.
+  - Updated live match counts and CSV export routines to honor active severity selections.
+- **Executive Summary Card (`frontend/components/AuditFindingsSummaryCard.tsx`)**:
+  - Embedded severity filter controls directly into the executive scorecard header with real-time requirement count distribution.
+
+---
+
+## [2.26.0] - 2026-09-29
+
+### Summary
+Created a high-level executive summary scorecard component (`AuditFindingsSummaryCard.tsx`) positioned at the top of the main content area in `frontend/pages/_app.tsx`. It displays live counts and percentages of **'Passed'**, **'Failed'**, and **'Pending'** findings derived in real time from Cloud Firestore and the audit activity event log, complete with multi-segment compliance distribution progress and an expandable audit log stream.
+
+---
+
+### Added & Enhanced
+
+#### 1. High-Level Audit Findings Summary Card (`frontend/components/AuditFindingsSummaryCard.tsx`)
+- **Metrics & Pillar Cards**:
+  - **Passed Findings (Compliant)**: Emerald green pillar displaying total compliant findings verified against IPA & Green Book standards, with percentage of total and direct link to `/compliance-tracker?filter=Compliant`.
+  - **Failed Findings (Flagged Risks)**: Crimson red pillar highlighting critical non-compliance or remediation gaps requiring mitigation, linked to `/compliance-tracker?filter=Flagged`.
+  - **Pending Findings (In Review)**: Amber orange pillar indicating items undergoing deliberation or awaiting supplementary evidence, linked to `/compliance-tracker?filter=In%20Progress`.
+- **Multi-Segment Health Distribution Bar**:
+  - Displays total evaluated scope with continuous visual breakdown across Passed, Failed, and Pending finding proportions and overall assurance health rate.
+- **Collapsible Audit Log Activity Feed**:
+  - Integrated timeline drawer displaying the latest audit transitions, evidence uploads, and risk flags with actor stamps and filter chips (`All`, `Passed`, `Failed`, `Pending`).
+- **Interactive State & Print Optimization**:
+  - Minimizable to a slim executive summary bar with user preference cached in `localStorage`.
+  - Fully compatible with `@media print` PDF exports.
+
+---
+
 ## [2.25.0] - 2026-09-27
 
 ### Summary
