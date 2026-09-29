@@ -97,8 +97,12 @@ export const GlobalHeaderSearch: React.FC = () => {
         (r.assignedToRole && r.assignedToRole.toLowerCase().includes(q));
       const matchCode = r.code?.toLowerCase().includes(q);
       const matchNotes = r.auditorNotes && r.auditorNotes.toLowerCase().includes(q);
+      const matchDocRef = r.documentRef && r.documentRef.toLowerCase().includes(q);
+      const matchEvidence = r.evidenceThreshold && r.evidenceThreshold.toLowerCase().includes(q);
+      const matchCategory = r.category && r.category.toLowerCase().includes(q);
+      const matchGate = r.gate && r.gate.toLowerCase().includes(q);
 
-      return matchTitle || matchDesc || matchAssigned || matchCode || matchNotes;
+      return matchTitle || matchDesc || matchAssigned || matchCode || matchNotes || matchDocRef || matchEvidence || matchCategory || matchGate;
     });
   }, [items, globalSearchQuery]);
 
@@ -416,28 +420,46 @@ export const GlobalHeaderSearch: React.FC = () => {
                         {item.description}
                       </p>
 
-                      {/* Assigned Member Badge */}
+                      {/* Assigned Member Badge & Source Document Chip */}
                       <div
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '4px',
+                          gap: '8px',
                           marginTop: '4px',
                           fontSize: '0.7rem',
-                          color: item.assignedTo ? '#1e40af' : '#94a3b8'
+                          color: item.assignedTo ? '#1e40af' : '#94a3b8',
+                          flexWrap: 'wrap'
                         }}
                       >
-                        <PersonIcon style={{ fontSize: '0.75rem' }} />
-                        <span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                          <PersonIcon style={{ fontSize: '0.75rem' }} />
                           {item.assignedTo ? (
                             <>
-                              Assigned: <strong>{item.assignedTo}</strong>{' '}
-                              {item.assignedToRole && `(${item.assignedToRole})`}
+                              Assigned: <strong>{item.assignedTo}</strong>
                             </>
                           ) : (
                             'Unassigned'
                           )}
                         </span>
+
+                        {item.documentRef && (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              padding: '1px 5px',
+                              backgroundColor: '#f1f5f9',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '3px',
+                              fontSize: '0.65rem',
+                              color: '#475569'
+                            }}
+                          >
+                            Source: {item.documentRef}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

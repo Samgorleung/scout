@@ -17,7 +17,8 @@ import {
   ArrowBack as ArrowBackIcon,
   ArrowBackIosNew as PrevIcon,
   ArrowForwardIos as NextIcon,
-  FileDownload as DownloadIcon
+  FileDownload as DownloadIcon,
+  PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
 
 import { fetchItems, fetchRelatedItems, rateResponse } from '@/utils/api';
@@ -25,6 +26,7 @@ import { ResultsSkeleton } from '@/components/LoadingSystem';
 import { useSearch } from '@/context/SearchContext';
 import { EvaluationSearchBar } from '@/components/EvaluationSearchBar';
 import { SeverityLevel, SEVERITY_CONFIGS, ALL_SEVERITY_LEVELS } from '@/components/SeverityFilterDropdown';
+import { FindingExpandableDetailView } from '@/components/FindingExpandableDetailView';
 import { exportEvaluationFindingsCsv } from '@/utils/exportComplianceCsv';
 import { logger } from '@/utils/logger';
 
@@ -696,6 +698,33 @@ const ResultsTable: React.FC = () => {
                 <DownloadIcon style={{ fontSize: '1rem', color: '#38bdf8' }} />
                 <span>{isExporting ? 'Exporting...' : 'Export CSV'}</span>
               </button>
+
+              {/* Download PDF Button triggering print media styles */}
+              <button
+                type="button"
+                onClick={() => {
+                  window.print();
+                }}
+                title="Download / Print review findings dossier to PDF using browser print stylesheet"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 14px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  color: '#0f172a',
+                  fontSize: '0.8125rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <PdfIcon style={{ fontSize: '1.05rem', color: '#dc2626' }} />
+                <span>Download PDF</span>
+              </button>
             </div>
           </div>
         </div>
@@ -785,157 +814,18 @@ const ResultsTable: React.FC = () => {
           </div>
         )}
 
-        {/* Detailed Findings Inspection Modal */}
-        <Modal open={open} onClose={handleClose}>
-          <Box sx={modalStyle}>
-            {/* Modal Header Actions: Quick Navigation & Close */}
-            <div style={{ position: 'absolute', right: 12, top: 12, display: 'flex', alignItems: 'center', gap: '4px' }}>
-              {filteredResults.length > 1 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', marginRight: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={handleQuickNavigatePrev}
-                    aria-label="Previous item"
-                    title="Previous matching item"
-                    style={{
-                      border: '1px solid #e2e8f0',
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '4px',
-                      padding: '4px 6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      color: '#475569'
-                    }}
-                  >
-                    <PrevIcon style={{ fontSize: '0.8rem' }} />
-                  </button>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b', padding: '0 6px' }}>
-                    {currentSelectedIndex >= 0 ? `${currentSelectedIndex + 1} / ${filteredResults.length}` : ''}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleQuickNavigateNext}
-                    aria-label="Next item"
-                    title="Next matching item"
-                    style={{
-                      border: '1px solid #e2e8f0',
-                      backgroundColor: '#f8fafc',
-                      borderRadius: '4px',
-                      padding: '4px 6px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      color: '#475569'
-                    }}
-                  >
-                    <NextIcon style={{ fontSize: '0.8rem' }} />
-                  </button>
-                </div>
-              )}
-              <IconButton
-                aria-label="close"
-                onClick={handleClose}
-                sx={{
-                  color: '#64748b',
-                  '&:hover': { color: '#0f172a', bgcolor: '#f1f5f9' },
-                }}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            </div>
-
-            {selectedRow && (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    backgroundColor: selectedRow.Status === 'Positive' ? '#dcfce7' : selectedRow.Status === 'Negative' ? '#fee2e2' : '#fef3c7',
-                    color: selectedRow.Status === 'Positive' ? '#166534' : selectedRow.Status === 'Negative' ? '#991b1b' : '#92400e',
-                  }}>
-                    {selectedRow.Status}
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>·</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>{selectedRow.Category}</span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>·</span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{selectedRow.Gate}</span>
-                </div>
-
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: '0 0 16px 0', lineHeight: 1.4 }}>
-                  {selectedRow.Criterion.question}
-                </h3>
-
-                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '14px', marginBottom: '14px' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    Evidence Considered in Dossier
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#334155', lineHeight: 1.6, backgroundColor: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    {formatEvidence(selectedRow.Evidence)}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '6px' }}>
-                    Assurance Justification & Analytical Finding
-                  </div>
-                  <div style={{ fontSize: '0.875rem', color: '#1e293b', lineHeight: 1.6 }}>
-                    {selectedRow.Justification}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '20px' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', marginBottom: '8px' }}>
-                    Referenced Document Citations
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {selectedRow.Sources.map((source: Source) => (
-                      <span
-                        key={source.chunk_id}
-                        onClick={() => handleCitationClick(source.chunk_id)}
-                        style={{
-                          cursor: 'pointer',
-                          padding: '4px 10px',
-                          borderRadius: '6px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          backgroundColor: '#eff6ff',
-                          color: '#1d70b8',
-                          border: '1px solid #bfdbfe',
-                          transition: 'all 0.15s ease',
-                        }}
-                      >
-                        📄 {source.fileName}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Feedback rating */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderTop: '1px solid #e2e8f0',
-                  paddingTop: '14px',
-                  marginTop: '16px'
-                }}>
-                  <span style={{ fontSize: '0.8125rem', color: '#64748b' }}>Was this assurance finding accurate?</span>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <IconButton onClick={() => handleRating(true)} aria-label="Accurate finding">
-                      <ThumbUpIcon style={thumbsUpColour} fontSize="small" />
-                    </IconButton>
-                    <IconButton onClick={() => handleRating(false)} aria-label="Inaccurate finding">
-                      <ThumbDownIcon style={thumbsDownColour} fontSize="small" />
-                    </IconButton>
-                  </div>
-                </div>
-              </div>
-            )}
-          </Box>
-        </Modal>
+        {/* Expandable Detail View Component opening on row click, displaying full evidence, justification, and remediation steps */}
+        <FindingExpandableDetailView
+          finding={selectedRow}
+          isOpen={open}
+          onClose={handleClose}
+          onNavigatePrev={handleQuickNavigatePrev}
+          onNavigateNext={handleQuickNavigateNext}
+          currentIndex={currentSelectedIndex}
+          totalCount={filteredResults.length}
+          onRateResponse={handleRating}
+          onCitationClick={handleCitationClick}
+        />
       </div>
     </>
   );

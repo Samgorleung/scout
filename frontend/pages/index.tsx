@@ -5,6 +5,7 @@ import Link from 'next/link';
 import PieChart from '../components/PieChart';
 import ComplianceTracker from '../components/ComplianceTracker';
 import ComplianceStatusPieChart from '../components/ComplianceStatusPieChart';
+import AuditFindingsTrendChart from '../components/AuditFindingsTrendChart';
 import { getGateUrl } from '../utils/getGateUrl';
 import { fetchReadItemsByAttribute, fetchItems } from '../utils/api';
 import {
@@ -338,6 +339,32 @@ const Summary: React.FC = () => {
             </Link>
 
             <button
+              type="button"
+              onClick={() => {
+                window.print();
+              }}
+              title="Download / Print assurance overview to PDF using browser print styles"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <PdfIcon style={{ fontSize: '1.05rem', color: '#dc2626' }} />
+              <span>Download PDF</span>
+            </button>
+
+            <button
               onClick={handleExportCompliancePdf}
               disabled={isExportingPdf}
               title="Export the current compliance summary data as an official PDF report"
@@ -498,6 +525,17 @@ const Summary: React.FC = () => {
         showSummaryCards={true}
         showFilterButtons={false}
       />
+
+      {/* Assurance Findings Trajectory Line Chart (Recharts) */}
+      <div style={{ marginBottom: '28px' }}>
+        <AuditFindingsTrendChart
+          title="Assurance Findings Trajectory & Verification Velocity"
+          subtitle="Chronological progression of Passed, Failed, and Pending findings based on verified audit logs & status transitions."
+          height={340}
+          showControls={true}
+          showSummaryBadges={true}
+        />
+      </div>
 
       {/* Assurance Categories Risk Grid */}
       <div style={{ marginBottom: '28px' }}>

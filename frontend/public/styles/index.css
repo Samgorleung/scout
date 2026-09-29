@@ -560,6 +560,17 @@ code, pre, .font-mono {
     height: auto !important;
   }
 
+  /* 8b. Recharts & Data Visualization Formatting for Print-to-PDF */
+  .recharts-responsive-container,
+  .recharts-wrapper,
+  .recharts-surface,
+  svg {
+    max-width: 100% !important;
+    overflow: visible !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
   /* 9. Print Document Footer Notice */
   .App-footer {
     position: static !important;

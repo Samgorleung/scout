@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { onSnapshot, collection } from 'firebase/firestore';
@@ -12,11 +12,15 @@ import {
   AuditActivity
 } from '@/lib/seedData';
 import { SeverityFilterDropdown, SeverityLevel, ALL_SEVERITY_LEVELS } from './SeverityFilterDropdown';
+import { AuditFindingsTrendChart } from './AuditFindingsTrendChart';
+import { AutoRefreshToggle } from './AutoRefreshToggle';
+import { getFirestoreAll } from '@/lib/firebase';
 import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
   HourglassEmpty as HourglassIcon,
   TrendingUp as TrendingUpIcon,
+  ShowChart as ShowChartIcon,
   Assessment as AssessmentIcon,
   History as HistoryIcon,
   FilterList as FilterListIcon,
@@ -26,7 +30,8 @@ import {
   Sync as SyncIcon,
   Shield as ShieldIcon,
   OpenInNew as OpenInNewIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  PictureAsPdf as PictureAsPdfIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -45,6 +50,7 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
   const [isLiveSynced, setIsLiveSynced] = useState<boolean>(false);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(initialCollapsed);
   const [showAuditFeed, setShowAuditFeed] = useState<boolean>(false);
+  const [showTrendChart, setShowTrendChart] = useState<boolean>(false);
   const [auditLogFilter, setAuditLogFilter] = useState<'ALL' | 'PASSED' | 'FAILED' | 'PENDING'>('ALL');
   const [selectedSeverities, setSelectedSeverities] = useState<SeverityLevel[]>(ALL_SEVERITY_LEVELS);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -198,11 +204,37 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
     });
   }, [auditLogs, auditLogFilter]);
 
-  const handleRefresh = () => {
+  // Poll audit log source for new findings and status transitions every 30 seconds
+  const handlePollAuditSource = useCallback(async () => {
+    let newItemsCount = 0;
+    try {
+      const freshReqs = await getFirestoreAll('compliance_requirements');
+      if (Array.isArray(freshReqs) && freshReqs.length > 0) {
+        setRequirements(freshReqs);
+      }
+
+      const freshLogs = await getFirestoreAll('audit_activities');
+      if (Array.isArray(freshLogs) && freshLogs.length > 0) {
+        setAuditLogs((prevLogs) => {
+          const prevIds = new Set(prevLogs.map(l => l.id));
+          const newCount = freshLogs.filter(l => !prevIds.has(l.id)).length;
+          newItemsCount = newCount;
+          return freshLogs;
+        });
+      }
+      setIsLiveSynced(true);
+    } catch (err) {
+      console.warn('[AuditFindingsSummaryCard] Polling notice:', err);
+    }
+    return { newCount: newItemsCount };
+  }, []);
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
+    await handlePollAuditSource();
     setTimeout(() => {
       setIsRefreshing(false);
-    }, 600);
+    }, 400);
   };
 
   return (
@@ -305,6 +337,30 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
               label="Severity"
             />
 
+            {/* Quick Toggle for Line Chart Trend */}
+            <button
+              type="button"
+              onClick={() => setShowTrendChart(prev => !prev)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                border: '1px solid #cbd5e1',
+                backgroundColor: showTrendChart ? '#e2e8f0' : '#ffffff',
+                color: '#334155',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              title="Toggle findings trajectory line chart"
+            >
+              <ShowChartIcon style={{ fontSize: '1rem', color: '#1d70b8' }} />
+              <span>Findings Trend</span>
+            </button>
+
             {/* Quick Toggle for Recent Audit Log Stream */}
             <button
               type="button"
@@ -339,6 +395,15 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
               </span>
             </button>
 
+            {/* 30-Second Auto-Refresh Polling Toggle */}
+            <AutoRefreshToggle
+              intervalSeconds={30}
+              onPoll={handlePollAuditSource}
+              compact={true}
+              label="Auto-Poll (30s)"
+              storageKey="ipa_scout_summary_card_auto_refresh"
+            />
+
             {/* Refresh Button */}
             <button
               type="button"
@@ -356,12 +421,38 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
                 cursor: 'pointer',
                 transition: 'all 0.15s ease'
               }}
-              title="Refresh findings metrics"
+              title="Refresh findings metrics now"
             >
               <SyncIcon style={{
                 fontSize: '1rem',
                 animation: isRefreshing ? 'spin 0.6s linear infinite' : 'none'
               }} />
+            </button>
+
+            {/* Download PDF via browser print-to-PDF styles */}
+            <button
+              type="button"
+              onClick={() => {
+                window.print();
+              }}
+              title="Download / Print executive audit findings scorecard to PDF using print media styles"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 12px',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <PictureAsPdfIcon style={{ fontSize: '0.95rem', color: '#dc2626' }} />
+              <span>Download PDF</span>
             </button>
 
             {/* Collapse / Expand Toggle */}
@@ -850,6 +941,25 @@ export const AuditFindingsSummaryCard: React.FC<AuditFindingsSummaryCardProps> =
                     </div>
                   </div>
                 </div>
+
+                {/* Collapsible Findings Trajectory Line Chart */}
+                <AnimatePresence>
+                  {showTrendChart && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      style={{
+                        marginTop: '16px',
+                        borderTop: '1px solid #e2e8f0',
+                        paddingTop: '16px'
+                      }}
+                    >
+                      <AuditFindingsTrendChart height={300} showControls={true} showSummaryBadges={true} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Collapsible Audit Activity Feed Stream */}
                 <AnimatePresence>

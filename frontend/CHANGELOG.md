@@ -6,6 +6,80 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.33.1] - 2026-09-29
+
+### Summary
+Fixed the React warning `Cannot update a component ('AuditFindingsSummaryCard') while rendering a different component ('AutoRefreshToggle')` by decoupling countdown interval ticks from poll callback execution in `AutoRefreshToggle.tsx`, wrapping poll handlers in `useCallback`, and dispatching asynchronous background polling outside React state updater reducers.
+
+---
+
+## [2.33.0] - 2026-09-29
+
+### Summary
+Implemented a configurable **Auto-Refresh Toggle** component (`AutoRefreshToggle.tsx`) across the Portfolio Dashboard (`PortfolioDashboard.tsx`) and Executive Audit Scorecard (`AuditFindingsSummaryCard.tsx`) that automatically polls the audit log source (`audit_activities`, `compliance_requirements`, and evaluation findings) every 30 seconds, dynamically synchronizing dashboard metrics, finding status counts, and the recent activity feed with countdown badges and live state indicators.
+
+---
+
+## [2.32.0] - 2026-09-29
+
+### Summary
+Created a high-fidelity **'Expandable Detail View'** component (`FindingExpandableDetailView.tsx`) that opens when any row in the findings table (`results.tsx`) is clicked. It presents full evidence thresholds, analytical justification, referenced document sources, and actionable step-by-step engineering and governance remediation roadmaps with task trackers, print capabilities, fullscreen mode, and sequential carousel navigation.
+
+---
+
+## [2.31.0] - 2026-09-29
+
+### Summary
+Implemented a real-time keyword search input component (`DashboardAuditFindingsSearch.tsx`) in the dashboard header (`PortfolioDashboard.tsx`) and enhanced global navigation search (`GlobalHeaderSearch.tsx`) allowing auditors to query audit findings across **Criterion** (question, category, gate, evidence) and cited **Sources** (document references, chunk citations) with live keyword highlighting, match count badges, and direct navigation to detailed findings.
+
+---
+
+## [2.30.0] - 2026-09-29
+
+### Summary
+Added a prominent **'Download PDF'** button to dashboard and audit findings view headers (`PortfolioDashboard.tsx`, `results.tsx`, `AuditFindingsSummaryCard.tsx`, and `index.tsx`) that leverages browser print media stylesheets (`@media print` in `frontend/public/styles/index.css`) to trigger high-fidelity browser print-to-PDF generation with clean layout wrapping, hidden UI chrome, and official sensitivity footer markings.
+
+---
+
+## [2.29.0] - 2026-09-29
+
+### Summary
+Resolved development server startup issue by synchronizing workspace dependencies (`framer-motion`, `jspdf`, `jspdf-autotable`, `pdfjs-dist`) between root and `frontend/package.json`, re-indexing bun lockfile, and executing a clean development server restart on port 3000.
+
+---
+
+### Fixed & Enhanced
+
+#### 1. Dependency Resolution & Server Stability
+- Synchronized `frontend/package.json` dependencies with the root workspace definitions.
+- Verified build and TypeScript compilation (`compile_applet` passed successfully).
+- Relaunched the Next.js development server process on port 3000.
+
+---
+
+## [2.28.0] - 2026-09-29
+
+### Summary
+Implemented an interactive line chart component using Recharts (`AuditFindingsTrendChart.tsx`) to visualize the chronological trajectory of audit findings (**Passed**, **Failed**, **Pending**) over time based on available log data and status transitions. Integrated the chart into the Overview page (`frontend/pages/index.tsx`) and the top Executive Audit Summary Card (`AuditFindingsSummaryCard.tsx`).
+
+---
+
+### Added & Enhanced
+
+#### 1. Recharts Audit Findings Trend Chart (`frontend/components/AuditFindingsTrendChart.tsx`)
+- **Multi-Series Chronological Line Graph**:
+  - **Passed Findings Line**: Emerald green stroke (`#10b981`) tracking verified compliant items over time.
+  - **Failed Findings Line**: Crimson red stroke (`#ef4444`) tracking flagged project risks and remediation deficits.
+  - **Pending Findings Line**: Warm amber dashed stroke (`#f59e0b`) tracking requirements undergoing active review.
+- **Dynamic View Modes & Controls**:
+  - **Cumulative Mode**: Running balance of verified Passed, Failed, and Pending findings across the review lifecycle.
+  - **Pass Rate % Mode**: Area trajectory comparing current project pass rate against the official HM Treasury 70% assurance threshold.
+  - **Time Range Filtering**: Quick selectors for `30 Days`, `90 Days`, `6 Months`, and `All Time`.
+  - **Interactive Series Toggles**: KPI summary cards allow clicking to show/hide individual lines dynamically.
+  - **Custom Tooltip & CSV Export**: Displays date stamps, milestone narratives, auditor signatures, and enables raw trend dataset downloads.
+
+---
+
 ## [2.27.0] - 2026-09-29
 
 ### Summary

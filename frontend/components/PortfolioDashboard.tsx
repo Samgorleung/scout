@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   activeInfrastructureProjects,
@@ -40,6 +40,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReviewStatusDistributionChart from './ReviewStatusDistributionChart';
 import ComplianceStatusPieChart from './ComplianceStatusPieChart';
 import { ErrorBoundary } from './ErrorBoundary';
+import { DashboardAuditFindingsSearch } from './DashboardAuditFindingsSearch';
+import { AutoRefreshToggle } from './AutoRefreshToggle';
+import { getFirestoreAll } from '@/lib/firebase';
+import { fetchItems } from '@/utils/api';
 import { exportPortfolioCompliancePdf, exportComplianceAuditPdf } from '@/utils/exportCompliancePdf';
 
 export default function PortfolioDashboard() {
@@ -234,6 +238,76 @@ export default function PortfolioDashboard() {
     setSelectedStatus('ALL');
     setSortBy('date');
   };
+
+  // Poll audit log source for new findings and progress activities every 30 seconds
+  const handlePollAuditLogs = useCallback(async () => {
+    try {
+      let countNew = 0;
+
+      // 1. Poll Firestore audit activities
+      try {
+        const remoteActivities = await getFirestoreAll('audit_activities');
+        if (Array.isArray(remoteActivities) && remoteActivities.length > 0) {
+          setActivities((prevActivities) => {
+            const existingIds = new Set(prevActivities.map(a => a.id));
+            const newEntries: RecentProgressMetric[] = [];
+
+            remoteActivities.forEach((rem: any) => {
+              if (!existingIds.has(rem.id)) {
+                countNew++;
+                newEntries.push({
+                  id: rem.id,
+                  projectId: rem.projectId || 'proj_01',
+                  projectName: rem.projectName || 'A428 Black Cat to Caxton Gibbet Improvement',
+                  action: rem.action || rem.summary || `Assurance review logged: ${rem.title || 'Audit check'}`,
+                  actor: rem.actor || rem.auditorName || 'Lead Assurance Reviewer (samgorleung1224@gmail.com)',
+                  timestamp: rem.timestamp ? new Date(rem.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now',
+                  type: rem.type || 'Compliance Check',
+                  gate: rem.gate || 'GATE_2',
+                  notesSnippet: rem.notes || rem.notesSnippet || rem.description || 'HM Treasury Green Book assurance criteria verified'
+                });
+              }
+            });
+
+            return newEntries.length > 0 ? [...newEntries, ...prevActivities] : prevActivities;
+          });
+        }
+      } catch (actErr) {
+        console.warn('[PortfolioDashboard] Poll audit_activities notice:', actErr);
+      }
+
+      // 2. Poll API evaluation findings to refresh project compliance counts
+      try {
+        const results = await fetchItems('result');
+        if (Array.isArray(results) && results.length > 0) {
+          const negCount = results.filter((r: any) => r.answer === 'Negative').length;
+          const posCount = results.filter((r: any) => r.answer === 'Positive').length;
+
+          setProjects(prev => prev.map((proj, idx) => {
+            if (idx === 0) {
+              const compCount = Math.max(posCount, proj.compliantCount);
+              const flagCount = Math.max(negCount, proj.flaggedCount);
+              const total = Math.max(proj.totalRequirements, compCount + flagCount);
+              return {
+                ...proj,
+                compliantCount: compCount,
+                flaggedCount: flagCount,
+                assuranceScore: Math.round((compCount / (total || 1)) * 100)
+              };
+            }
+            return proj;
+          }));
+        }
+      } catch (resErr) {
+        console.warn('[PortfolioDashboard] Poll findings results notice:', resErr);
+      }
+
+      return { newCount: countNew };
+    } catch (err) {
+      console.warn('[PortfolioDashboard] handlePollAuditLogs general error:', err);
+      return { newCount: 0 };
+    }
+  }, []);
 
   // Export Executive Portfolio Compliance Summary as a formal PDF report
   const handleExportCompliancePdf = async () => {
@@ -457,6 +531,41 @@ export default function PortfolioDashboard() {
               <span>Add Upcoming Deadline</span>
             </button>
 
+            {/* Auto-Refresh Toggle (30s polling) */}
+            <AutoRefreshToggle
+              intervalSeconds={30}
+              onPoll={handlePollAuditLogs}
+              label="Audit Polling (30s)"
+              storageKey="ipa_scout_dashboard_auto_refresh"
+            />
+
+            {/* Download PDF via browser print-to-PDF styles */}
+            <button
+              type="button"
+              onClick={() => {
+                window.print();
+              }}
+              title="Download audit findings and portfolio compliance view as PDF using browser print media styles"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                cursor: 'pointer',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <PdfIcon style={{ fontSize: '1.05rem', color: '#dc2626' }} />
+              <span>Download PDF</span>
+            </button>
+
             <button
               onClick={handleExportCompliancePdf}
               disabled={isExportingPdf}
@@ -481,6 +590,40 @@ export default function PortfolioDashboard() {
               <span>{isExportingPdf ? 'Generating PDF...' : 'Export Compliance Summary (PDF)'}</span>
             </button>
           </div>
+        </div>
+
+        {/* Real-time Keyword Search Across Audit Findings (Criterion, Sources) in Header */}
+        <div style={{
+          marginTop: '20px',
+          paddingTop: '16px',
+          borderTop: '1px solid #f1f5f9',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '14px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              color: '#0f172a'
+            }}>
+              <SearchIcon style={{ fontSize: '1rem', color: '#1d70b8' }} />
+              Audit Findings Real-Time Search:
+            </span>
+            <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+              Query assurance criteria, question scopes, and cited document sources in real-time
+            </span>
+          </div>
+
+          <DashboardAuditFindingsSearch
+            placeholder="Search findings (Criterion question, category, or cited Sources)..."
+            style={{ maxWidth: '440px', minWidth: '300px' }}
+          />
         </div>
 
         {/* Export Notification Toast */}
