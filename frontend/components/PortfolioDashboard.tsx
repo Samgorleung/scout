@@ -36,12 +36,14 @@ import {
   PieChart as PieChartIcon,
   BarChart as BarChartIcon,
   HelpOutline as HelpIcon,
-  MenuBook as BookIcon
+  MenuBook as BookIcon,
+  CompareArrows as CompareIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReviewStatusDistributionChart from './ReviewStatusDistributionChart';
 import ComplianceStatusPieChart from './ComplianceStatusPieChart';
 import { FindingsSeverityPieChart } from './FindingsSeverityPieChart';
+import { PeerBenchmarkingView } from './PeerBenchmarkingView';
 import { ErrorBoundary } from './ErrorBoundary';
 import { DashboardAuditFindingsSearch } from './DashboardAuditFindingsSearch';
 import { AutoRefreshToggle } from './AutoRefreshToggle';
@@ -54,7 +56,7 @@ export default function PortfolioDashboard() {
   const [projects, setProjects] = useState<InfrastructureProject[]>(activeInfrastructureProjects);
   const [deadlines, setDeadlines] = useState<UpcomingDeadline[]>(upcomingProjectDeadlines);
   const [activities, setActivities] = useState<RecentProgressMetric[]>(recentAuditProgressMetrics);
-  const [dashboardChartTab, setDashboardChartTab] = useState<'compliance_pie' | 'severity_pie' | 'review_bars' | 'both'>('compliance_pie');
+  const [dashboardChartTab, setDashboardChartTab] = useState<'compliance_pie' | 'severity_pie' | 'review_bars' | 'benchmarking' | 'both'>('compliance_pie');
 
   // Filters & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -1099,6 +1101,28 @@ export default function PortfolioDashboard() {
           </button>
 
           <button
+            onClick={() => setDashboardChartTab('benchmarking')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 14px',
+              fontSize: '0.78125rem',
+              fontWeight: dashboardChartTab === 'benchmarking' ? 700 : 500,
+              backgroundColor: dashboardChartTab === 'benchmarking' ? '#ffffff' : 'transparent',
+              color: dashboardChartTab === 'benchmarking' ? '#0f172a' : '#64748b',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              boxShadow: dashboardChartTab === 'benchmarking' ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <CompareIcon style={{ fontSize: '1rem', color: '#6366f1' }} />
+            <span>Peer Benchmarking</span>
+          </button>
+
+          <button
             onClick={() => setDashboardChartTab('both')}
             style={{
               display: 'inline-flex',
@@ -1151,6 +1175,13 @@ export default function PortfolioDashboard() {
             selectedStatus={selectedStatus}
             onSelectStatus={setSelectedStatus}
           />
+        )}
+
+        {/* Render Peer Benchmarking View */}
+        {(dashboardChartTab === 'benchmarking' || dashboardChartTab === 'both') && (
+          <div style={{ marginTop: dashboardChartTab === 'both' ? '20px' : '0px' }}>
+            <PeerBenchmarkingView />
+          </div>
         )}
       </ErrorBoundary>
 

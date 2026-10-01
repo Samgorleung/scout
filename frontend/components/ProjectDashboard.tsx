@@ -47,7 +47,10 @@ import {
   Close as CloseIcon,
   Search as SearchIcon,
   FileDownload as DownloadIcon,
-  Article as ArticleIcon
+  Article as ArticleIcon,
+  AutoAwesome as SparklesIcon,
+  RestartAlt as ResetIcon,
+  Science as ScienceIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -137,6 +140,15 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
   const [includeDeadlinesSection, setIncludeDeadlinesSection] = useState(true);
   const [isExportingGatewayPack, setIsExportingGatewayPack] = useState(false);
   const [packExportNotice, setPackExportNotice] = useState<string | null>(null);
+  const [isGeneratingAiBriefing, setIsGeneratingAiBriefing] = useState(false);
+  const [aiBriefingNotice, setAiBriefingNotice] = useState<string | null>(null);
+
+  // What-If Gateway Decision Simulator State
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(true);
+  const [simResolveCritical, setSimResolveCritical] = useState(false);
+  const [simVerifyEconomic, setSimVerifyEconomic] = useState(false);
+  const [simProcurementEvidence, setSimProcurementEvidence] = useState(false);
+  const [simPlanningMitigation, setSimPlanningMitigation] = useState(false);
 
   // Sync selected project and tab with URL query params
   useEffect(() => {
@@ -617,6 +629,80 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
       setPackExportNotice('Notice: Unable to complete PDF export. Please try again.');
     } finally {
       setIsExportingGatewayPack(false);
+    }
+  };
+
+  // What-If Gateway Simulation Calculations
+  const simulatedGain =
+    (simResolveCritical ? 6 : 0) +
+    (simVerifyEconomic ? 5 : 0) +
+    (simProcurementEvidence ? 4 : 0) +
+    (simPlanningMitigation ? 5 : 0);
+
+  const simulatedScore = Math.min(100, currentProject.assuranceScore + simulatedGain);
+
+  const simulatedConfidence: 'GREEN' | 'AMBER_GREEN' | 'AMBER' | 'AMBER_RED' | 'RED' = useMemo(() => {
+    if (simulatedScore >= 85) return 'GREEN';
+    if (simulatedScore >= 75) return 'AMBER_GREEN';
+    if (simulatedScore >= 65) return 'AMBER';
+    if (simulatedScore >= 50) return 'AMBER_RED';
+    return 'RED';
+  }, [simulatedScore]);
+
+  const handleResetSimulation = () => {
+    setSimResolveCritical(false);
+    setSimVerifyEconomic(false);
+    setSimProcurementEvidence(false);
+    setSimPlanningMitigation(false);
+  };
+
+  const handleApplySimulationToGatewayPack = () => {
+    setGatewayPackConfidence(simulatedConfidence);
+    const resolvedItems = [
+      simResolveCritical ? 'Critical Deficit Mitigation' : '',
+      simVerifyEconomic ? 'Economic Case Benefit-Cost Ratio Verification' : '',
+      simProcurementEvidence ? 'Procurement & Commercial Strategy Finalization' : '',
+      simPlanningMitigation ? 'Statutory Planning Conditions Resolution' : ''
+    ].filter(Boolean);
+
+    setGatewayPackRemarks(
+      `Gateway Simulation Strategy: Reflecting a simulated assurance score of ${simulatedScore}% (${simulatedConfidence.replace('_', '/')}) following prospective resolution of ${
+        resolvedItems.length > 0 ? resolvedItems.join(', ') : 'targeted criteria'
+      }. Senior Responsible Owner (SRO) ${currentProject.sro} endorses proceeding with procurement subject to submission of formal evidentiary artifacts meeting statutory standards.`
+    );
+    setIsGatewayPackModalOpen(true);
+  };
+
+  const handleGenerateAiBriefing = async () => {
+    setIsGeneratingAiBriefing(true);
+    setAiBriefingNotice(null);
+    try {
+      const res = await fetch('/api/generate-briefing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectName: currentProject.name,
+          projectCode: currentProject.code,
+          gate: currentProject.gateLabel || currentProject.currentGate,
+          assuranceScore: currentProject.assuranceScore,
+          deliveryConfidence: gatewayPackConfidence,
+          sro: currentProject.sro,
+          greenBookCases: greenBookData,
+          riskMetrics: keyRiskMetrics,
+          flaggedCount: currentProject.flaggedCount || 0
+        })
+      });
+      const data = await res.json();
+      if (data.briefing) {
+        setGatewayPackRemarks(data.briefing);
+        setAiBriefingNotice('HM Treasury SRO Executive Brief successfully generated!');
+        setTimeout(() => setAiBriefingNotice(null), 3500);
+      }
+    } catch (err) {
+      console.error('Failed to generate AI briefing:', err);
+      setAiBriefingNotice('Notice: Unable to generate briefing, using standard synthesis.');
+    } finally {
+      setIsGeneratingAiBriefing(false);
     }
   };
 
@@ -1204,6 +1290,414 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Feature 1: "What-If" Gateway Approval & Delivery Confidence Simulator */}
+      <div style={{
+        backgroundColor: '#ffffff',
+        border: '1px solid #bfdbfe',
+        borderRadius: '12px',
+        padding: '20px 24px',
+        boxShadow: '0 2px 6px -1px rgba(29, 112, 184, 0.08)',
+        marginBottom: '24px',
+        backgroundImage: 'linear-gradient(to right, #ffffff, #f8fafc)'
+      }}>
+        {/* Simulator Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '12px',
+          borderBottom: '1px solid #e2e8f0',
+          paddingBottom: '14px',
+          marginBottom: '16px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '8px',
+              backgroundColor: '#1d70b8',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <ScienceIcon style={{ fontSize: '1.25rem' }} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                  What-If Gateway Approval & Delivery Confidence Simulator
+                </h3>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  color: '#1d70b8',
+                  fontSize: '0.7rem',
+                  fontWeight: 700
+                }}>
+                  Decision Modeling
+                </span>
+              </div>
+              <p style={{ margin: '3px 0 0 0', fontSize: '0.78125rem', color: '#64748b' }}>
+                Simulate gateway review outcomes by prospective mitigation of criteria deficits before formal HM Treasury committee review.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {simulatedGain > 0 && (
+              <button
+                type="button"
+                onClick={handleResetSimulation}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <ResetIcon style={{ fontSize: '0.9rem' }} />
+                <span>Reset Levers</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setIsSimulatorOpen(!isSimulatorOpen)}
+              style={{
+                padding: '5px 10px',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#ffffff',
+                color: '#1d70b8',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              {isSimulatorOpen ? 'Collapse Simulator' : 'Expand Simulator'}
+            </button>
+          </div>
+        </div>
+
+        {/* Simulator Body */}
+        {isSimulatorOpen && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: '20px',
+            alignItems: 'stretch'
+          }}>
+            {/* Levers List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Prospective Mitigation Levers:
+              </span>
+
+              {/* Lever 1 */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: simResolveCritical ? '#f0fdf4' : '#ffffff',
+                border: simResolveCritical ? '1px solid #86efac' : '1px solid #e2e8f0',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={simResolveCritical}
+                    onChange={(e) => setSimResolveCritical(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a' }}>
+                      Mitigate Critical Planning Deficits
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      Satisfies statutory DCO environmental net-gain threshold
+                    </div>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  color: simResolveCritical ? '#15803d' : '#1d70b8',
+                  backgroundColor: simResolveCritical ? '#dcfce7' : '#eff6ff',
+                  padding: '2px 8px',
+                  borderRadius: '4px'
+                }}>
+                  +6%
+                </span>
+              </label>
+
+              {/* Lever 2 */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: simVerifyEconomic ? '#f0fdf4' : '#ffffff',
+                border: simVerifyEconomic ? '1px solid #86efac' : '1px solid #e2e8f0',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={simVerifyEconomic}
+                    onChange={(e) => setSimVerifyEconomic(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a' }}>
+                      Verify Economic Case BCR Model
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      Full Green Book social welfare & monetized benefit sign-off
+                    </div>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  color: simVerifyEconomic ? '#15803d' : '#1d70b8',
+                  backgroundColor: simVerifyEconomic ? '#dcfce7' : '#eff6ff',
+                  padding: '2px 8px',
+                  borderRadius: '4px'
+                }}>
+                  +5%
+                </span>
+              </label>
+
+              {/* Lever 3 */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: simProcurementEvidence ? '#f0fdf4' : '#ffffff',
+                border: simProcurementEvidence ? '1px solid #86efac' : '1px solid #e2e8f0',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={simProcurementEvidence}
+                    onChange={(e) => setSimProcurementEvidence(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a' }}>
+                      Submit Commercial Procurement Strategy
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      Verified contract allocation & risk transfer agreements
+                    </div>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  color: simProcurementEvidence ? '#15803d' : '#1d70b8',
+                  backgroundColor: simProcurementEvidence ? '#dcfce7' : '#eff6ff',
+                  padding: '2px 8px',
+                  borderRadius: '4px'
+                }}>
+                  +4%
+                </span>
+              </label>
+
+              {/* Lever 4 */}
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                backgroundColor: simPlanningMitigation ? '#f0fdf4' : '#ffffff',
+                border: simPlanningMitigation ? '1px solid #86efac' : '1px solid #e2e8f0',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <input
+                    type="checkbox"
+                    checked={simPlanningMitigation}
+                    onChange={(e) => setSimPlanningMitigation(e.target.checked)}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <div>
+                    <div style={{ fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a' }}>
+                      Resolve Financial Contingency Envelope
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                      Affordability sign-off with HM Treasury spending team
+                    </div>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 800,
+                  color: simPlanningMitigation ? '#15803d' : '#1d70b8',
+                  backgroundColor: simPlanningMitigation ? '#dcfce7' : '#eff6ff',
+                  padding: '2px 8px',
+                  borderRadius: '4px'
+                }}>
+                  +5%
+                </span>
+              </label>
+            </div>
+
+            {/* Projected Outcome Card */}
+            <div style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid #cbd5e1',
+              borderRadius: '10px',
+              padding: '18px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)'
+            }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                    Simulated Assurance Trajectory
+                  </span>
+                  {simulatedGain > 0 ? (
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      backgroundColor: '#dcfce7',
+                      color: '#15803d',
+                      fontSize: '0.75rem',
+                      fontWeight: 700
+                    }}>
+                      +{simulatedGain}% Projected Gain
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Live Baseline</span>
+                  )}
+                </div>
+
+                {/* Big Score Comparison */}
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '12px', margin: '10px 0' }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>
+                    {simulatedScore}%
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                    (Baseline: {currentProject.assuranceScore}%)
+                  </span>
+                </div>
+
+                {/* Progress bar comparison */}
+                <div style={{
+                  height: '8px',
+                  width: '100%',
+                  backgroundColor: '#e2e8f0',
+                  borderRadius: '9999px',
+                  overflow: 'hidden',
+                  marginBottom: '14px',
+                  position: 'relative'
+                }}>
+                  {/* Baseline fill */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: `${currentProject.assuranceScore}%`,
+                    backgroundColor: '#1d70b8'
+                  }} />
+                  {/* Simulated gain fill */}
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: `${currentProject.assuranceScore}%`,
+                    width: `${Math.min(100 - currentProject.assuranceScore, simulatedGain)}%`,
+                    backgroundColor: '#10b981'
+                  }} />
+                </div>
+
+                {/* Projected Delivery Confidence Rating */}
+                <div style={{
+                  padding: '10px 12px',
+                  borderRadius: '6px',
+                  backgroundColor:
+                    simulatedConfidence === 'GREEN' ? '#ecfdf5' :
+                    simulatedConfidence === 'AMBER_GREEN' ? '#f0fdfa' :
+                    simulatedConfidence === 'AMBER' ? '#fffbeb' : '#fef2f2',
+                  border: `1px solid ${
+                    simulatedConfidence === 'GREEN' ? '#a7f3d0' :
+                    simulatedConfidence === 'AMBER_GREEN' ? '#99f6e4' :
+                    simulatedConfidence === 'AMBER' ? '#fde68a' : '#fecaca'
+                  }`,
+                  marginBottom: '14px'
+                }}>
+                  <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                    Projected Gateway Delivery Confidence:
+                  </div>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    fontWeight: 800,
+                    color:
+                      simulatedConfidence === 'GREEN' ? '#059669' :
+                      simulatedConfidence === 'AMBER_GREEN' ? '#0d9488' :
+                      simulatedConfidence === 'AMBER' ? '#d97706' : '#dc2626',
+                    marginTop: '2px'
+                  }}>
+                    {simulatedConfidence.replace('_', ' / ')}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={handleApplySimulationToGatewayPack}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  width: '100%',
+                  padding: '10px 16px',
+                  backgroundColor: '#1d70b8',
+                  border: '1px solid #1d70b8',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  fontSize: '0.8125rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(29, 112, 184, 0.2)'
+                }}
+              >
+                <ArticleIcon style={{ fontSize: '1rem', color: '#bfdbfe' }} />
+                <span>Apply Simulation to Gateway Pack Dossier</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 3. Section: Project Status Summary Visualizations (Recharts) */}
@@ -2462,15 +2956,50 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
               </div>
             </div>
 
-            {/* Section 2: Executive Remarks & Recommendations */}
+            {/* Section 2: Executive Remarks & Recommendations with AI Generation */}
             <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
-                Executive Remarks & SRO Sign-off Conditions:
-              </label>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px',
+                marginBottom: '6px'
+              }}>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 700, color: '#0f172a' }}>
+                  Executive Remarks & SRO Sign-off Conditions:
+                </label>
+                <button
+                  type="button"
+                  onClick={handleGenerateAiBriefing}
+                  disabled={isGeneratingAiBriefing}
+                  title="Generate authoritative HM Treasury SRO Determination Brief using Gemini AI"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    backgroundColor: isGeneratingAiBriefing ? '#e2e8f0' : '#f0fdf4',
+                    border: '1px solid #86efac',
+                    color: isGeneratingAiBriefing ? '#64748b' : '#15803d',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: isGeneratingAiBriefing ? 'wait' : 'pointer',
+                    boxShadow: '0 1px 2px rgba(16, 185, 129, 0.15)',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <SparklesIcon style={{ fontSize: '0.9rem', color: isGeneratingAiBriefing ? '#64748b' : '#10b981' }} />
+                  <span>{isGeneratingAiBriefing ? 'Synthesizing with Gemini...' : 'AI Draft SRO Brief'}</span>
+                </button>
+              </div>
+
               <textarea
                 value={gatewayPackRemarks}
                 onChange={(e) => setGatewayPackRemarks(e.target.value)}
-                rows={3}
+                rows={4}
+                placeholder="Enter executive review remarks or generate automatically using AI..."
                 style={{
                   width: '100%',
                   padding: '10px 12px',
@@ -2479,9 +3008,21 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({
                   fontSize: '0.8125rem',
                   color: '#0f172a',
                   lineHeight: 1.5,
-                  resize: 'vertical'
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
                 }}
               />
+
+              {aiBriefingNotice && (
+                <div style={{
+                  marginTop: '6px',
+                  fontSize: '0.725rem',
+                  fontWeight: 600,
+                  color: aiBriefingNotice.includes('Notice') ? '#b91c1c' : '#15803d'
+                }}>
+                  {aiBriefingNotice}
+                </div>
+              )}
             </div>
 
             {/* Section 3: Sections Included in Dossier */}

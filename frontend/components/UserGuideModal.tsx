@@ -335,7 +335,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({
                     <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Project Assurance</span>
                   </div>
                   <p style={{ fontSize: '0.78125rem', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.4 }}>
-                    Deep-dive into a single project. Inspect the 5-Case Green Book scores vs. 80% benchmark, risk exposure matrix, and statutory criteria checklist.
+                    Deep-dive into a single project. Test prospective mitigation levers with the interactive <strong>What-If Gateway Simulator</strong>, inspect 5-Case Green Book scores vs. 80% benchmark, and export official dossiers.
                   </p>
                   <button
                     type="button"
@@ -384,7 +384,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({
                     <span style={{ fontWeight: 700, fontSize: '0.9rem', color: '#0f172a' }}>Portfolio Governance</span>
                   </div>
                   <p style={{ fontSize: '0.78125rem', color: '#475569', margin: '0 0 10px 0', lineHeight: 1.4 }}>
-                    Monitor cross-portfolio GMPP indices, upcoming statutory deadlines, sector distributions, and export official Gateway Assurance Packs.
+                    Monitor cross-portfolio GMPP indices, run side-by-side <strong>Cross-Project Peer Benchmarking</strong> on 5-case Green Book dimensions, and track statutory milestones.
                   </p>
                   <button
                     type="button"
@@ -568,7 +568,7 @@ export const UserGuideModal: React.FC<UserGuideModalProps> = ({
                   <li>Select your target infrastructure project from the header dropdown.</li>
                   <li>Click the blue <strong>&quot;Gateway Assurance Pack&quot;</strong> button in the top action bar.</li>
                   <li>In the generator modal, select the determined <strong>Delivery Confidence Rating</strong> (Green to Red).</li>
-                  <li>Enter any executive remarks or SRO sign-off conditions.</li>
+                  <li>Click <strong>&quot;Auto-Draft SRO Brief (Gemini AI)&quot;</strong> to synthesize an authoritative HM Treasury determination narrative tailored to 5-case Green Book scores, or enter custom remarks.</li>
                   <li>Click <strong>Generate & Download Gateway Pack (PDF)</strong>.</li>
                 </ol>
               </div>

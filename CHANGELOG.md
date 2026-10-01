@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [2.39.0] - 2026-09-30
+
+### Summary
+Implemented all three approved core enhancements to empower infrastructure assurance reviewers, SROs, and HM Treasury Approvals Committees:
+1. **AI-Powered Executive Gateway Determination & SRO Briefing Generator (`/api/generate-briefing`, `ProjectDashboard.tsx`)**:
+   - Integrated Google GenAI (`@google/genai` targeting flagship `gemini-3.8-flash`) into the official Gateway Assurance Pack generation workflow.
+   - Automatically synthesizes formal, authoritative HM Treasury Green Book and IPA Gateway Review determination narratives (highlighting 5-case strengths, endorsement conditions, specific remediation stipulations, and final delivery recommendations) tailored to live project metrics.
+   - Seamlessly injects the generated narrative into the Gateway Assurance Pack PDF signature block.
+2. **Interactive "What-If" Gateway Scenario & Mitigation Simulator (`ProjectDashboard.tsx`)**:
+   - Built a real-time scenario simulation engine in the Project Assurance console allowing auditors and SROs to test prospective mitigation levers (+6% Critical Deficit Mitigation, +5% Economic Case BCR Verification, +4% Commercial & Procurement Strategy, +5% Statutory Planning Mitigation).
+   - Recalculates overall assurance scores and statutory Delivery Confidence Assessment (DCA) ratings (Red → Amber/Red → Amber → Amber/Green → Green) dynamically.
+   - Provides a one-click action to inject simulated scenarios and projected scores directly into the Gateway Assurance Pack generator.
+3. **Cross-Project Peer Benchmarking & 5-Case Green Book Comparison Workspace (`PeerBenchmarkingView.tsx`, `PortfolioDashboard.tsx`)**:
+   - Developed a dedicated comparative analytics module comparing any two GMPP major projects.
+   - Features side-by-side KPI metric cards (Assurance Score, DCA badge, Capital Budget, SRO, Gate, Critical Risks, Verified Criteria), a Recharts comparative grouped bar chart benchmarking both projects across all five Green Book cases against the 80% passing standard, winner delta badges, and direct navigation into project assurance workspaces.
+   - Integrated into the Portfolio Hub Visual Analytics Hub with tab toggling and fault-isolated error boundaries.
+4. **Assurance Playbook & User Guide Synchronization (`UserGuideModal.tsx`)**:
+   - Updated the global user guide to document the What-If Gateway Simulator, Cross-Project Peer Benchmarking, and Gemini AI SRO Determination auto-drafting workflows.
+
+---
+
 ## [2.38.0] - 2026-09-29
 
 ### Summary
